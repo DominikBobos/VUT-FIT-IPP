@@ -12,7 +12,7 @@ declare(strict_types=1);
 $merlin = strtoupper(substr(PHP_OS, 0, 5));
 if (($merlin = strtoupper(substr(PHP_OS, 0, 5))) == "LINUX")
 	$merlin_bool = true;
-////////// KVÔLI ROZDIELNEMU UKONČOVANIA SÚBOROV //////////////
+////////// KVÔLI ROZDIELNEMU UKONČOVANIU SÚBOROV //////////////
 
 /************************
 *	GLOBÁLNE PREMENNÉ  	*
