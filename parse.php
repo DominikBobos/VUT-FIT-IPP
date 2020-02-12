@@ -1,7 +1,18 @@
 <?php
 
+/****************************************
+*	PARSE.PHP skript pre predmet 		*
+*	autor: Boboš Dominik xbobos00		*
+*	akademický rok: 2019/2020			*
+*	mail: xbobos00@stud.fit.vutbr  		*
+****************************************/
 declare(strict_types=1);
 
+//////////////	PRE KOMPATIBILITU SYSTÉMOV 	///////////////////
+$merlin = strtoupper(substr(PHP_OS, 0, 5));
+if (($merlin = strtoupper(substr(PHP_OS, 0, 5))) == "LINUX")
+	$merlin_bool = true;
+////////// KVÔLI ROZDIELNEMU UKONČOVANIA SÚBOROV //////////////
 
 /************************
 *	GLOBÁLNE PREMENNÉ  	*
@@ -21,7 +32,12 @@ $counting_good = 0;								// overuje správne zadané argumenty
 /************************/
 GenerateXML::makeXMLheader();
 
-//funkcia na spracovanie chybových hlášok
+
+
+/****************************************
+*	Funkcia na spracovanie 				*
+*	chybových hlášok					*
+****************************************/
 function ErrorExit($exit_code) 
 {
 	global $stdin;
@@ -58,11 +74,16 @@ function ErrorExit($exit_code)
 }
 
 
-//trieda ktorá obsahuje funckie na generoanie XML súboru
+
+/****************************************
+*	Trieda ktorá obsahuje 				*
+*	funkcie na generovanie XML súboru	*
+****************************************/
 class GenerateXML
 {
-
-	//tvorba hlavičky
+	///						///
+	//tvorba hlavičky		 //
+	///						///
 	public static function makeXMLheader()
 	{
 		global $xml_file;
@@ -74,7 +95,9 @@ class GenerateXML
         $xml_file->appendChild($xml_prog);
 	}
 
-	//tvorba tela programu
+	///						///
+	//tvorba tela programu	 //
+	///						///
 	public static function makeXMLprogram()
 	{
 		global $xml_file;
@@ -136,12 +159,15 @@ class GenerateXML
 		}
 		$xml_prog->appendChild($instr);
 	}
-	
-
-	
 }
 
-// trieda na spravovanie a uchovanie hodnotov Tokenu
+
+
+
+/****************************************
+*	trieda na spravovanie 				*
+*	a uchovanie hodnotov Tokenu			*
+****************************************/
 class Token
 {
     public $keyword;							//použiteľné pre všetky classes
@@ -153,7 +179,12 @@ class Token
     }
 }
 
-// lexikálna analýza
+
+
+/****************************************
+*	trieda pre 							*
+*	lexikálnu analýzu					*
+****************************************/
 class Scanner
 {
 	// kľučové slová jazyka IPPcode20
@@ -194,9 +225,10 @@ class Scanner
 		"DPRINT", 
 		"BREAK");
 
-
-	//hľadanaie kľúčových slov v IPPcode20 , 
-	//inkrementácia $instr_count a case insensitive porovnanie
+	///															///
+	//hľadanie kľúčových slov v IPPcode20 , 					 //
+	//inkrementácia $instr_count a case insensitive porovnanie 	 //
+	///															///
 	public static function FoundKeyword() 
 	{
         foreach (Scanner::$keywords as $keyword) 
@@ -231,13 +263,20 @@ class Scanner
             $comments_count++;						///pocitanie a "mazanie" komentarov
             while (ord($temp_lex_char) != 10) 		///pokym nebude EOL
             {  	
-                $temp_lex_char = fgetc($stdin);
+            	$temp_lex_char = fgetc($stdin);
+
+            	global $merlin_bool;
+            	if (feof($stdin) and $merlin_bool == true)
+            	{
+            		break;
+            	}
             }
         }
     }
 
-
-    //získavanie jednotlivých tokenov v IPPcode20
+    ///												///
+    //  získavanie jednotlivých tokenov v IPPcode20	 //
+    ///												///
     public function GetNextToken()
     {
 		global $stdin;
@@ -267,12 +306,13 @@ class Scanner
 			}
 		}
 
-
 		while($newtoken == false)
 		{ 
-			if (ord($temp_lex_char) == 9 or ord($temp_lex_char) == 11 or ord($temp_lex_char) == 13 
-				or ord($temp_lex_char) == 32 or ord($temp_lex_char) == 10) 
-			// if(ctype_space($temp_lex_char))
+			// if ( ord($temp_lex_char) == 9 or ord($temp_lex_char) == 11 or ord($temp_lex_char) == 13 
+			// 	or ord($temp_lex_char) == 32 or ord($temp_lex_char) == 10) 
+			global $merlin_bool;
+
+			if(ctype_space($temp_lex_char) or ((feof($stdin)) and $merlin_bool = true) )
 			{
 				switch ($temp_lex_str) 
 				{
@@ -314,7 +354,7 @@ class Scanner
                     	break;
                     }
                     //STRING symbol - moze obsahovat aj premennu
-                    case (preg_match('/^string@([[:alnum:]]|[\_\-\*\$\%\&\?\!]|\\\\[0-9]{3})*$/', $temp_lex_str) == 1):
+                    case (preg_match('/^string@([[:alnum:]]|[\_\-\*\$\%\&\?\!\;\/]|\\\\[0-9]{3})*$/', $temp_lex_str) == 1):
                     {
 						$temp_lex_str = substr($temp_lex_str, 7);
 						$newtoken = new Token("sstring", $temp_lex_str);
@@ -365,13 +405,26 @@ class Scanner
 			}
 			else
 			{
-				$temp_lex_str = $temp_lex_str . $temp_lex_char;
+				if ($temp_lex_char == '<'){
+					$temp_lex_str = $temp_lex_str . "&lt;";
+				}
+				elseif ($temp_lex_char == '>'){
+					$temp_lex_str = $temp_lex_str . "&gt;";
+				}
+				elseif ($temp_lex_char == '&'){
+					$temp_lex_str = $temp_lex_str . "&amp;";
+				}
+				else{
+					$temp_lex_str = $temp_lex_str . $temp_lex_char;
+				}
+				
 				if (feof($stdin)) 
-				{               
+				{            
              	   $newtoken = new Token("EOF", "EOF");
             	}
             	else 
 					Scanner::GetChar();
+					
 			}
 		}
 		return $newtoken;
@@ -379,11 +432,16 @@ class Scanner
 }
 
 
-//Syntaktická analýza a generovanie XML
+
+/****************************************
+*	Syntaktická analýza					*
+*	a generovanie XML 					*
+****************************************/
 class SyntaxAnalysis
 {
-
-	//kontrola tokenov pre platnosť pravidiel 
+	///											///
+	// kontrola tokenov pre platnosť pravidiel 	 //
+	///											///
 	public function CheckToken($keyword, $str)
 	{
 		global $temp_lex_char;
@@ -418,8 +476,15 @@ class SyntaxAnalysis
                 } 
                 else
                 {
-                	fwrite(STDERR, "Syntaktická chyba!\n");
-                    ErrorExit("LEX_ERROR");
+                	
+                	if ($keyword == 'EOL' and $temp_keyword == 'EOF')
+                		;
+
+                	else
+                	{
+                		fwrite(STDERR, "Syntaktická chyba!\n");
+                    	ErrorExit("LEX_ERROR");
+                    }
                 } 
             }
         } 
@@ -441,15 +506,22 @@ class SyntaxAnalysis
             	}
             	else
             	{
-	            	fwrite(STDERR, "Syntaktická chyba!\n");
-	                ErrorExit("LEX_ERROR");
+            		global $merlin_bool;
+            		if ($str == 'EOL' and $check_token->str == 'EOF' and $merlin_bool == true)
+                		;
+	            	else
+	            	{
+	            		fwrite(STDERR, "Syntaktická chyba!\n");
+	                	ErrorExit("LEX_ERROR");
+	                }
             	}
             } 
         }
         return $check_token;
 	}
-
-	//spracovanie pravidla Instruction a následné správne volanie funkcie
+	///																		///
+	//  spracovanie pravidla Instruction a následné správne volanie funkcie	 //
+	///																		///
 	function Instruction()
 	{
 		global $temp_lex_char;
@@ -587,7 +659,6 @@ class SyntaxAnalysis
 	///											///
 	// 		Spracovanie jednotlivých pravidiel	 //
 	///											///
-
 	//spracovanie prvého pravidla
 	public function parse()
 	{
@@ -996,7 +1067,9 @@ class SyntaxAnalysis
 }
 
 
-
+/****************************************
+*				  MAIN 	 				*
+****************************************/
 // ak nebol zadaný nijaký prepínač
 if($argc == 1)
 {
