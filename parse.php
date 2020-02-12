@@ -53,18 +53,20 @@ function ErrorExit($exit_code)
     		exit(99);
     		break;
     	default:
-    		exit(99);					//interná chyba?
+    		exit(99);				
     }
 }
 
+
+//trieda ktorá obsahuje funckie na generoanie XML súboru
 class GenerateXML
 {
+
+	//tvorba hlavičky
 	public static function makeXMLheader()
 	{
 		global $xml_file;
 		global $xml_prog;
-
-
 
 		$xml_file = new DomDocument("1.0", "UTF-8");
 		$xml_prog = $xml_file->createElement('program');
@@ -72,6 +74,7 @@ class GenerateXML
         $xml_file->appendChild($xml_prog);
 	}
 
+	//tvorba tela programu
 	public static function makeXMLprogram()
 	{
 		global $xml_file;
@@ -86,6 +89,8 @@ class GenerateXML
 		$instr->setAttribute('opcode', $arg_0);
 	
 		$arg_count = 1;
+
+		//switch na spracovanie jednotlivých predaných parametrov 
 		while($arg_count < func_num_args())
 		{
 			$token = func_get_arg($arg_count);
@@ -136,7 +141,7 @@ class GenerateXML
 	
 }
 
-
+// trieda na spravovanie a uchovanie hodnotov Tokenu
 class Token
 {
     public $keyword;							//použiteľné pre všetky classes
@@ -148,9 +153,10 @@ class Token
     }
 }
 
-
+// lexikálna analýza
 class Scanner
 {
+	// kľučové slová jazyka IPPcode20
 	public static $keywords = array(
 		"MOVE", 
 		"CREATEFRAME", 
@@ -188,6 +194,9 @@ class Scanner
 		"DPRINT", 
 		"BREAK");
 
+
+	//hľadanaie kľúčových slov v IPPcode20 , 
+	//inkrementácia $instr_count a case insensitive porovnanie
 	public static function FoundKeyword() 
 	{
         foreach (Scanner::$keywords as $keyword) 
@@ -205,6 +214,8 @@ class Scanner
         return false;
     }
 
+
+    //získanie znaku zo STDIN
     public function GetChar() 
     {   
     	global $stdin;
@@ -213,6 +224,7 @@ class Scanner
 
         $temp_lex_char = fgetc($stdin);				// načítava znak zo súboru
         
+        //spracovanie komentárov
         if($temp_lex_char === '#') 
         {
         	global $comments_count;
@@ -224,6 +236,8 @@ class Scanner
         }
     }
 
+
+    //získavanie jednotlivých tokenov v IPPcode20
     public function GetNextToken()
     {
 		global $stdin;
@@ -231,9 +245,8 @@ class Scanner
 		global $temp_lex_str;
 		$newtoken = false;	
 		$temp_bool = true;
-		//Scanner::GetChar();
 		
-		//menežuje "white spaces"
+		//menežuje biele znaky
 		while($temp_bool != false)
 		{
 			$temp_bool = false;
@@ -253,6 +266,7 @@ class Scanner
 				$temp_bool = true;
 			}
 		}
+
 
 		while($newtoken == false)
 		{ 
@@ -364,14 +378,17 @@ class Scanner
     }
 }
 
+
+//Syntaktická analýza a generovanie XML
 class SyntaxAnalysis
 {
+
+	//kontrola tokenov pre platnosť pravidiel 
 	public function CheckToken($keyword, $str)
 	{
 		global $temp_lex_char;
 		global $temp_lex_str;
 
-		//Scanner::GetChar();
 		$check_token = Scanner::GetNextToken();
 
 		//osetrovanie ze v symb moze byt aj var
@@ -382,8 +399,9 @@ class SyntaxAnalysis
         } 
         else 
         {
-            $temp_keyword = $check_token->keyword;
+            $temp_keyword = $check_token->keyword;	//pomocna premenná na uchovanie kľúčového slova
         }
+
 
         if($keyword == '' and $str == '') 
         {
@@ -392,7 +410,7 @@ class SyntaxAnalysis
         } 
         elseif($keyword != '' and $str == '') 
         {
-            if(strcmp($keyword, $temp_keyword) != 0) 
+            if(strcmp($keyword, $temp_keyword) != 0) 	//ak som očakával 'symb' ale token bol 'var'
             {
                 if ($keyword == 'symb' and $temp_keyword == 'var') 
                 {    
@@ -431,6 +449,7 @@ class SyntaxAnalysis
         return $check_token;
 	}
 
+	//spracovanie pravidla Instruction a následné správne volanie funkcie
 	function Instruction()
 	{
 		global $temp_lex_char;
@@ -563,6 +582,13 @@ class SyntaxAnalysis
 				}
 		}
 	}
+
+
+	///											///
+	// 		Spracovanie jednotlivých pravidiel	 //
+	///											///
+
+	//spracovanie prvého pravidla
 	public function parse()
 	{
 	//	.IPPcode20 EOL <Instruction> EOF
@@ -969,9 +995,9 @@ class SyntaxAnalysis
 	}
 }
 
-//main
 
 
+// ak nebol zadaný nijaký prepínač
 if($argc == 1)
 {
 	Scanner::GetChar();
@@ -988,11 +1014,11 @@ else
         "labels"
     );
 
-	$params = getopt ( "", $long_params);
+	$params = getopt ( "", $long_params);		//zíkanie argumentov a ich parsovanie do $params
 
 	if (array_key_exists('help', $params) )
 	{
-		if($argc == 2) 
+		if($argc == 2) 							// zadany argument --help
 		{
             echo <<<EOL
 -Skript parse.php prekladá vstupný súbor napísaný v jazyku IPPcode20 
@@ -1018,7 +1044,7 @@ EOL;
             ErrorExit("WRONG_PARAM");
         }
 	}
-	elseif (array_key_exists("stats", $params))
+	elseif (array_key_exists("stats", $params))							//rozsirenie STATP
 	{
 		$statistics_file = fopen($params["stats"], "w");
 		if ($statistics_file == false)
@@ -1026,11 +1052,11 @@ EOL;
 			fwrite(STDERR, "Výstupný súbor nejde otvoriť alebo neexituje!\n");
 			ErrorExit("FILEOUT_FAIL");
 		}
-        if ($argc < 3)
-        {
-        	fwrite(STDERR, "Nesprávny počet argumentov! Použi prepínač '--help' pre zobrazenie nápovedy.\n");
-        	ErrorExit("WRONG_PARAM");
-        }
+        // if ($argc < 3)
+        // {
+        // 	fwrite(STDERR, "Nesprávny počet argumentov! Použi prepínač '--help' pre zobrazenie nápovedy.\n");
+        // 	ErrorExit("WRONG_PARAM");
+        // }
         Scanner::GetChar();
 		SyntaxAnalysis::parse();
 
