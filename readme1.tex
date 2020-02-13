@@ -1,0 +1,35 @@
+\documentclass[11pt, a4paper]{article}
+
+\usepackage[czech]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{times}
+\usepackage[left=2cm, top=3cm, text={17cm, 24cm}]{geometry}
+\usepackage[unicode, colorlinks, hypertexnames=false, citecolor=red]{hyperref}
+
+
+\begin{document}
+    {\parindent 0pt \Large
+        Implementačná dokumentácia k~1.~úlohe do IPP 2019/2020\\
+        Meno a~priezvisko: Dominik Boboš \\
+        Login: \texttt{xbobos00}
+    }
+    
+    \section{Spracovanie parametrov z~príkazového riadku}
+    
+    Implementácia spracovanie parametrov z~príkazovej riadky je na konci zdrojového kódu, kedy sa pomocou \texttt{\$argc} zisťuje, či boli nejaké parametre zadané. Pokiaľ je počet väčší než 1, v~premennej \texttt{\$long\_params} typu \texttt{array} sú uložené prípustné parametre a pomocou \texttt{getopt("", \$long\_params)} sa ukladajú do premennej \texttt{\$params} typu \texttt{array} tie parametre, ktoré boli zadané a adekvátne sa k~tomu program zachová. To znamená, že v~prípade nepovolenej konštrukcie alebo zadávaní neexistujúcich parametrov vráti parser.php návratovú hodnotu \emph{10}.
+    
+    
+     \section{Analýza a preklad zdrojového kódu IPPcode20 do XML}
+     Zdrojový kód v~\texttt{IPPcode20} je najskôr zo zdrojového súboru presmerovaný na \texttt{STDIN} a je uložený do premennej \texttt{\$stdin}. Ďalej sú pre analýzu kľučové triedy \texttt{Scanner} a \texttt{SyntaxAnalysis}. Syntaktická sa spú\-šťa funkciou \texttt{parse()}, ktorá testuje pravidlo \texttt{.IPPcode20 EOL <Instruction> EOF}. Pri chýbajúcej alebo nesprávne napísanej hlavičke je návratový kód \emph{21}. V~prípade nesprávnej inštrukcie je návratová hodnota \emph{22}. K~overovaniu využíva funkciu \texttt{CheckToken(\$keyword, \$str)}. Táto funkcia využíva funkciu \texttt{GetNextToken()} z~triedy \texttt{Scanner}. 
+
+Token je získavaný zo \texttt{\$stdin} po znakoch funkciou \texttt{GetChar()} a jeho štruktúra a hodnoty \emph{\$keyword, \$str} sú implementované v~triede \texttt{Token}. V~prípade iných lexikálnych či syntaktických chýb je kód chyby \emph{23}.
+
+Preklad do XML je implementovaný v~triede \texttt{GenerateXML}. K~prekladu do XML je použitý nástroj \texttt{DomDocument}. Pomocou neho  sa vo funkcií \texttt{makeXMLheader()} vytvorí hlavička výsledného XML kódu so všetkými náležitosťami. K~vytvoreniu samotného prekladu tela programu slúži funkcia \texttt{makeXMLprogram()}. Táto funkcia je volaná zo syntaktickej analýzy s~potrebným počtom parametrov, ktoré daná inštrukcia v~IPPcode20 vyžaduje. Napríklad inštrukcia \emph{ADD} vyžaduje \emph{<var>}, \emph{<symb1>} a \emph{<symb2>}, funkcia je pri správnom poradí tokenov volaná nasledovne \texttt{GenerateXML::makeXMLprogram("ADD", \$argument1, \$argument2, \$argument3);}. Výsledný XML sa pomocou \texttt{echo \$xml\_file->saveXML();} vytlačí na štandardný výstup.
+
+	\section{Implementované rozšířenia}
+	\textbf{STATP} - rožšírenie, pre zbieranie štatistík.
+	Toto rožširenie sa aktivuje v~prípade, že bol predaný parameter \texttt{-{}-stats=file}, pokiaľ bol zadaný samostatne, do \texttt{file} sa nevytlačí nič, ostane prázdny. Zvyšné prepínače \texttt{-{}-loc}, \texttt{-{}-comments}, \texttt{-{}-jumps}, \texttt{-{}-labels}, sú implementované ako globálne premenné, ktoré sa inkrementujú na konkrétnych miestach podľa toho či nastala situácia, ktorú sledujú (-{}-loc počet riadkov s~inštrukciami v~IPPcode20, -{}-comments počet komentárov, -{}-jumps počet podmienených/nepodmienených skokov, volania a návraty z~volania, -{}-labels počet definovaných náveští). Hodnoty sú vypisované vždy na nový riadok do \texttt{file} v~takom poradí v~akom boli zadané na príkazovom riadku. Tie isté parametre možu byť zadané viackrát, avšak vždy musí byť zadaný aj paramter -{}-stats, inak je návratová hodnota \emph{10}. 
+     
+    
+\end{document}
