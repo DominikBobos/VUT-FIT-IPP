@@ -871,15 +871,14 @@ class SyntaxAnalysis
 
 		SyntaxAnalysis::Instruction();
 	}
-	// NOT <var> <symb1> <symb2> EOL <Instruction>
+	// NOT <var> <symb1> EOL <Instruction>
 	function RuleNOT()
 	{
 		$argument1 = SyntaxAnalysis::CheckToken('var','');
 		$argument2 = SyntaxAnalysis::CheckToken('symb','');
-		$argument3 = SyntaxAnalysis::CheckToken('symb','');
 		SyntaxAnalysis::CheckToken('EOL','EOL');
 
-		GenerateXML::makeXMLprogram("NOT", $argument1, $argument2, $argument3);
+		GenerateXML::makeXMLprogram("NOT", $argument1, $argument2);
 
 		SyntaxAnalysis::Instruction();
 	}
