@@ -8,11 +8,14 @@
 ****************************************/
 declare(strict_types=1);
 
+
+
 //////////////	PRE KOMPATIBILITU SYSTÉMOV 	///////////////////
 $merlin = strtoupper(substr(PHP_OS, 0, 5));
 if (($merlin = strtoupper(substr(PHP_OS, 0, 5))) == "LINUX")
 	$merlin_bool = true;
-////////// KVÔLI ROZDIELNEMU UKONČOVANIU SÚBOROV //////////////
+////////// KVÔLI ROZDIELNEMU UKONČOVANIu SÚBOROV //////////////
+
 
 /************************
 *	GLOBÁLNE PREMENNÉ  	*
@@ -308,19 +311,17 @@ class Scanner
 
 		while($newtoken == false)
 		{ 
-			// if ( ord($temp_lex_char) == 9 or ord($temp_lex_char) == 11 or ord($temp_lex_char) == 13 
-			// 	or ord($temp_lex_char) == 32 or ord($temp_lex_char) == 10) 
 			global $merlin_bool;
-
-			if(ctype_space($temp_lex_char) or ((feof($stdin)) and $merlin_bool = true) )
+				//kvôli rozdielnemu ukončovaniu súborov na macu a merlinovi
+			if(ctype_space($temp_lex_char) or ((feof($stdin)) and $merlin_bool = true) )	
 			{
 				switch ($temp_lex_str) 
 				{
-					//KĽÚČOVÉ SLOVÁ
+					//KĽÚČOVÉ SLOVÁ do $newtoken sa v prípade úspechu uloží token
 					case (($newtoken = Scanner::FoundKeyword() ) != false):
 					{
-						$temp_lex_str = '';
-						break; 		//nerob nic, FoundKeyword spravi vsetko potrebne
+						$temp_lex_str = '';	//FoundKeyword spravi vsetko potrebne
+						break; 	
 					}
 					//HLAVIČKA
 					case ".IPPcode20":
@@ -353,8 +354,8 @@ class Scanner
                     	$temp_lex_str = '';    
                     	break;
                     }
-                    //STRING symbol - moze obsahovat aj premennu
-                    case (preg_match('/^string@([[:alnum:]]|[\_\-\*\$\%\&\?\!\;\/]|\\\\[0-9]{3})*$/', $temp_lex_str) == 1):
+                    //STRING symbol - moze obsahovat aj premennu.  'u' nakonci kvôli akceptácií českých znakov 
+                    case (preg_match('/^string@([[:alnum:]]|[\_\-\*\$\%\&\?\!\;\/]|\\\\[0-9]{3})*$/u', $temp_lex_str) == 1):	
                     {
 						$temp_lex_str = substr($temp_lex_str, 7);
 						$newtoken = new Token("sstring", $temp_lex_str);
@@ -369,15 +370,14 @@ class Scanner
                     	break;
                     }
                     //PREMENNÉ
-                    case (preg_match('/^(GF|LF|TF)@([[:alpha:]]|[\_\-\*\$\%\&\?\!])([[:alnum:]]|[\_\-\*\$\%\&\?\!])*$/', $temp_lex_str) == 1):
+                    case (preg_match('/^(GF|LF|TF)@([[:alpha:]]|[\_\-\*\$\%\&\?\!\;\/])([[:alnum:]]|[\_\-\*\$\%\&\?\!])*$/u', $temp_lex_str) == 1):
                     {
-                    	//$temp_lex_str = substr($temp_lex_str, 3);
 						$newtoken = new Token("var", $temp_lex_str);
                     	$temp_lex_str = '';    
                     	break;
                     }
                     //LABEL-  rovnake ako VAR
-                    case (preg_match('/^([[:alpha:]]|[\_\-\*\$\%\&\?\!])([[:alnum:]]|[\_\-\*\$\%\&\?\!])*$/', $temp_lex_str) == 1):
+                    case (preg_match('/^([[:alpha:]]|[\_\-\*\$\%\&\?\!])([[:alnum:]]|[\_\-\*\$\%\&\?\!\;\/])*$/u', $temp_lex_str) == 1):
                     {
 						$newtoken = new Token("labelstr", $temp_lex_str);
                     	$temp_lex_str = '';    
@@ -387,7 +387,7 @@ class Scanner
 					{
 						global $instr_count;
 						global $instr_bool;
-						if ($instr_count == 0)
+						if ($instr_count == 0)	//nebola nijaká inštrukcia predtým čiže hlavička je buď chybne alebo nie je
 						{
 							fwrite(STDERR, "Chybne napísaná hlavička .IPPcode20!\n");
             				ErrorExit("MISSING_HEADER");
@@ -405,6 +405,7 @@ class Scanner
 			}
 			else
 			{
+				// modifikácia problematických znakov v XML
 				if ($temp_lex_char == '<'){
 					$temp_lex_str = $temp_lex_str . "&lt;";
 				}
@@ -533,7 +534,7 @@ class SyntaxAnalysis
 		$token = Scanner::GetNextToken();
 		$instr_bool = false;
  
-
+		// switch-case jednotlivých inštrukcií IPPcode20 a následné volanie funkcie danej inštrukcie
 		switch (strtoupper($token->keyword))		//sú case insensitive
 		{
 			case "EOL":								// v pripade ze mame prazdne riadky 
@@ -658,6 +659,8 @@ class SyntaxAnalysis
 
 	///											///
 	// 		Spracovanie jednotlivých pravidiel	 //
+	//		a následné volanie funkcie pre 		 //
+	//		generovanie XML výstupu				 //
 	///											///
 	//spracovanie prvého pravidla
 	public function parse()
