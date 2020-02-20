@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 
 $directory = getcwd();
-$int_file = $directory . "./interpret.py";
-$parse_file = $directory . "./parse.php";
+$int_file = $directory . "/interpret.py";
+$parse_file = $directory . "/parse.php";
 $jexamxml_file = "/pub/courses/ipp/jexamxml/jexamxml.jar";
 
 $recursive_flag = false;
