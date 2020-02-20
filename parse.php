@@ -355,7 +355,7 @@ class Scanner
                     	break;
                     }
                     //STRING symbol - moze obsahovat aj premennu.  'u' nakonci kvôli akceptácií českých znakov 
-                    case (preg_match('/^string@([[:alnum:]]|[\_\-\*\$\%\&\?\!\;\/]|\\\\[0-9]{3})*$/u', $temp_lex_str) == 1):	
+                    case (preg_match('/^string@([[:alnum:]]|[\_\-\*\$\@\%\&\?\!\;\/]|\\\\[0-9]{3})*$/u', $temp_lex_str) == 1):	
                     {
 						$temp_lex_str = substr($temp_lex_str, 7);
 						$newtoken = new Token("sstring", $temp_lex_str);
@@ -370,14 +370,14 @@ class Scanner
                     	break;
                     }
                     //PREMENNÉ
-                    case (preg_match('/^(GF|LF|TF)@([[:alpha:]]|[\_\-\*\$\%\&\?\!\;\/])([[:alnum:]]|[\_\-\*\$\%\&\?\!])*$/u', $temp_lex_str) == 1):
+                    case (preg_match('/^(GF|LF|TF)@([[:alpha:]]|[\_\-\*\$\@\%\&\?\!\;\/])([[:alnum:]]|[\_\-\*\$\@\;\%\&\?\!\/])*$/u', $temp_lex_str) == 1):
                     {
 						$newtoken = new Token("var", $temp_lex_str);
                     	$temp_lex_str = '';    
                     	break;
                     }
                     //LABEL-  rovnake ako VAR
-                    case (preg_match('/^([[:alpha:]]|[\_\-\*\$\%\&\?\!])([[:alnum:]]|[\_\-\*\$\%\&\?\!\;\/])*$/u', $temp_lex_str) == 1):
+                    case (preg_match('/^([[:alpha:]]|[\_\-\*\$\@\%\&\?\;\!\/])([[:alnum:]]|[\_\-\*\$\%\@\&\?\!\;\/])*$/u', $temp_lex_str) == 1):
                     {
 						$newtoken = new Token("labelstr", $temp_lex_str);
                     	$temp_lex_str = '';    
