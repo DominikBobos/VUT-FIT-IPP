@@ -269,7 +269,7 @@ class Scanner
             	$temp_lex_char = fgetc($stdin);
 
             	global $merlin_bool;
-            	if (feof($stdin) and $merlin_bool == true)
+            	if (feof($stdin))
             	{
             		break;
             	}
