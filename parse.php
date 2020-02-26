@@ -32,6 +32,7 @@ $instr_bool = false;							// bool na správne vypísanie chybovej hlášky
 $xml_file;										// premenne potrebné pre generovanie GenerateXML
 $xml_prog;										// premenne potrebné pre generovanie GenerateXML
 $counting_good = 0;								// overuje správne zadané argumenty
+$label_arr = array("");							// pole pre unikatne labels
 /************************/
 GenerateXML::makeXMLheader();
 
@@ -992,8 +993,14 @@ class SyntaxAnalysis
 		SyntaxAnalysis::CheckToken('EOL','EOL');
 
 		GenerateXML::makeXMLprogram("LABEL", $argument1);
-		global $label_count;
-		$label_count++;
+		global $label_count, $label_arr;
+
+		if (in_array($argument1->str,$label_arr))
+			;
+		else
+			$label_count++;
+			$label_arr[] = $argument1->str;
+
 
 		SyntaxAnalysis::Instruction();
 	}
