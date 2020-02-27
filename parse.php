@@ -241,6 +241,7 @@ class Scanner
 
             if(strcasecmp($temp_lex_str, $keyword) == 0) 		//case insensitive porovnavanie
             {   
+            	if ($temp_lex_str == "label") return false;
             	global $instr_count;
           		$instr_count++;									//keyword znamená novú inštrukciu
                 $newtoken = new Token($keyword, $keyword);
@@ -325,7 +326,7 @@ class Scanner
 						break; 	
 					}
 					//HLAVIČKA
-					case ".IPPcode20":
+					case (strtoupper($temp_lex_str) == ".IPPCODE20"):
 					{
 						$newtoken = new Token("header",".IPPcode20");
 						$temp_lex_str = '';
@@ -356,7 +357,7 @@ class Scanner
                     	break;
                     }
                     //STRING symbol - moze obsahovat aj premennu.  'u' nakonci kvôli akceptácií českých znakov 
-                    case (preg_match('/^string@([[:alnum:]]|[\_\-\*\$\@\%\&\?\!\;\/]|\\\\[0-9]{3})*$/u', $temp_lex_str) == 1):	
+                    case (preg_match('/^string@([[:alnum:]]|[\_\-\*\$\@\%\&\?\!\;\/\'\,\.\:\=]|\\\\[0-9]{3})*$/u', $temp_lex_str) == 1):	
                     {
 						$temp_lex_str = substr($temp_lex_str, 7);
 						$newtoken = new Token("sstring", $temp_lex_str);
@@ -371,14 +372,14 @@ class Scanner
                     	break;
                     }
                     //PREMENNÉ
-                    case (preg_match('/^(GF|LF|TF)@([[:alpha:]]|[\_\-\*\$\@\%\&\?\!\;\/])([[:alnum:]]|[\_\-\*\$\@\;\%\&\?\!\/])*$/u', $temp_lex_str) == 1):
+                    case (preg_match('/^(GF|LF|TF)@([[:alpha:]]|[\_\-\*\$\%\&\?\!])([[:alnum:]]|[\_\-\*\$\@\;\%\&\?\!\/])*$/u', $temp_lex_str) == 1):
                     {
 						$newtoken = new Token("var", $temp_lex_str);
                     	$temp_lex_str = '';    
                     	break;
                     }
                     //LABEL-  rovnake ako VAR
-                    case (preg_match('/^([[:alpha:]]|[\_\-\*\$\@\%\&\?\;\!\/])([[:alnum:]]|[\_\-\*\$\%\@\&\?\!\;\/])*$/u', $temp_lex_str) == 1):
+                    case (preg_match('/^([[:alpha:]]|[\_\-\*\$\%\&\?\!])([[:alnum:]]|[\_\-\*\$\%\@\&\?\!\;\/])*$/u', $temp_lex_str) == 1):
                     {
 						$newtoken = new Token("labelstr", $temp_lex_str);
                     	$temp_lex_str = '';    
@@ -484,7 +485,7 @@ class SyntaxAnalysis
 
                 	else
                 	{
-                		fwrite(STDERR, "Syntaktická chyba!\n");
+                	//	fwrite(STDERR, "Syntaktická chyba!\n");
                     	ErrorExit("LEX_ERROR");
                     }
                 } 
@@ -513,7 +514,7 @@ class SyntaxAnalysis
                 		;
 	            	else
 	            	{
-	            		fwrite(STDERR, "Syntaktická chyba!\n");
+	            	//	fwrite(STDERR, "Syntaktická chyba!\n");
 	                	ErrorExit("LEX_ERROR");
 	                }
             	}
@@ -998,8 +999,10 @@ class SyntaxAnalysis
 		if (in_array($argument1->str,$label_arr))
 			;
 		else
+		{
 			$label_count++;
 			$label_arr[] = $argument1->str;
+		}
 
 
 		SyntaxAnalysis::Instruction();

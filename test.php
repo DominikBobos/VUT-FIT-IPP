@@ -100,7 +100,7 @@ function TestFiles($source)
 			return false;
 		}
 		
-		if((isXmlStructureValid($source) or !isXmlStructureValid($ref_output)) and $parse_only_flag == true)	//zistuje ci .src je xml subor
+		if(isXmlStructureValid($source) and $parse_only_flag == true)	//zistuje ci .src je xml subor
 		{
 			return false;
 		}
@@ -129,17 +129,17 @@ function TestFiles($source)
 		fclose($test_file);
 
 		$test_count++;
-
 		exec("php7.4 ".$parse_file ." <$source >temp_output", $result,$rc_out);
 		if($rc_out != $exp_rc)
 		{
 			HTMLgen($filename,$exp_rc,$rc_out,false,$test_count);		//rc sa nerovnali
+			$failure++;
 		}
 		else 
 		{
-			exec("java -jar ".$jexamxml_file." temp_output ".$ref_output,$result, $diff_ret); 
 
-			if($diff_ret != 0)
+			exec("java -jar ".$jexamxml_file." temp_output ".$ref_output, $result, $diff_ret); 
+			if($diff_ret != 0 and $rc_out != $exp_rc)
 		 	{
 		 		$failure++;
 				HTMLgen($filename,$exp_rc,$rc_out,false,$test_count);
