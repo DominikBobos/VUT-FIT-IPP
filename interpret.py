@@ -11,7 +11,7 @@ import os
 class ArgumentParser(argumentParser.ArgumentParser):	
 	def error(self, message):
 		sys.stderr.write("ERROR: Used wrong arguments! Use '--help' for program manual.\n")
-		exit(10)
+		sys.exit(10)
 
 # adding possible options 
 parser = ArgumentParser(add_help=False)
@@ -26,7 +26,7 @@ arguments = parser.parse_args()
 
 if arguments.help:
 	if len(sys.argv) != 2:
-		sys.stderr.write("ERROR: '--help' need to be used standalone.\n")
+		sys.stderr.write("ERROR: '--help' need to be used standalone.\n") 
 		exit(10)
 	else:
 		print("POMOC SO SKRIPTOM takze tu treba este dopisat stracky na pomoc")
@@ -58,54 +58,79 @@ for x in range(1,len(sys.argv)):
 END OF ARGS PARSING SECTION
 """
 
+try:
+	tree = elemTree.parse(arguments.source)
+	# Valid root element
+	root = tree.getroot()
+	if root.tag != "program":
+		raise elemTree.ParseError("root element must be 'program'")
 
-class XMLparser:
-	def __init__(self, input_xml, stack): #, frames, flowControl):
-		self.__instructions = None
-		self.__stack = stack
-		#self.__frames = frames
-		#self.__flowControl = flowControl  # Instruction counter and labelstack
+	if "language" not in root.attrib:
+		raise elemTree.ParseError("missing attribute 'language'")
 
-				# Start parsing source XML
-		try:
-			tree = elemTree.parse(args.source)
-			# Valid root element
-			root = tree.getroot()
-			if root.tag != "program":
-				raise elemTree.ParseError("root element must be 'program'")
+	for attrib, value in root.attrib.items():
+		if attrib == "language":
+			if value != "IPPcode20":
+				raise elemTree.ParseError("language must be 'IPPcode20' ")
+		elif attrib != "name" and attrib != "description":
+			raise elemTree.ParseError("program element can only contain language, name or description attributes")
+	print("zbehol som v pohode")
 
-			if "language" not in root.attrib:
-				raise elemTree.ParseError("missing attribute 'language'")
-
-			for attrib, value in root.attrib.items():
-				if attrib == "language":
-					if value != "IPPcode20":
-						raise elemTree.ParseError("language must be 'IPPcode20' ")
-				elif attrib != "name" and attrib != "description":
-					raise elemTree.ParseError("program element can only contain language, name or description attributes")
-
-		except elemTree.ParseError as wrongxml:
-			sys.stderr.write("ERROR: wrong XML format (%s)!\n" % str(wrongxml))
-			exit(31)
+except elemTree.ParseError as wrongxml:
+	sys.stderr.write("ERROR: wrong XML format (%s)!\n" % str(wrongxml))
+	exit(31)
+except FileNotFoundError:
+    sys.stderr.write("ERROR: Source file cannot be opened !\n")
+    exit(11)
 
 
-class Interpret:
-	def __init__(self):
-		# STATI extension
-		self.__inst = 0
-		self.__vars = set()
+# class XMLparser:
+# 	def __init__(self, input_xml, stack): #, frames, flowControl):
+# 		self.__instructions = None
+# 		self.__stack = stack
+# 		#self.__frames = frames
+# 		#self.__flowControl = flowControl  # Instruction counter and labelstack
 
-		# Interpret vars
-		self.__instructionList = []
-		#self._flowControl = FlowControl()   # Contains instruction counter, position stack and labels dict
-		self._stack = []
-		#self._frames = Frames()
+# 				# Start parsing source XML
+# 		try:
+# 			tree = elemTree.parse(args.source)
+# 			# Valid root element
+# 			root = tree.getroot()
+# 			if root.tag != "program":
+# 				raise elemTree.ParseError("root element must be 'program'")
 
-	def start(self):
-		xml = XMLparser(self.arguments.source, self._stack )	#, self._frames, self._flowControl)
-		print('dostal som sa sem?')
+# 			if "language" not in root.attrib:
+# 				raise elemTree.ParseError("missing attribute 'language'")
 
-XMLparser.__init__(arguments.source, [] )
+# 			for attrib, value in root.attrib.items():
+# 				if attrib == "language":
+# 					if value != "IPPcode20":
+# 						raise elemTree.ParseError("language must be 'IPPcode20' ")
+# 				elif attrib != "name" and attrib != "description":
+# 					raise elemTree.ParseError("program element can only contain language, name or description attributes")
+
+# 		except elemTree.ParseError as wrongxml:
+# 			sys.stderr.write("ERROR: wrong XML format (%s)!\n" % str(wrongxml))
+# 			exit(31)
+
+
+# class Interpret:
+# 	def __init__(self):
+# 		# STATI extension
+# 		self.__inst = 0
+# 		self.__vars = set()
+
+# 		# Interpret vars
+# 		self.__instructionList = []
+# 		#self._flowControl = FlowControl()   # Contains instruction counter, position stack and labels dict
+# 		self._stack = []
+# 		#self._frames = Frames()
+
+# 	def start(self):
+# 		xml = XMLparser(self.arguments.source, self._stack )	#, self._frames, self._flowControl)
+# 		print('dostal som sa sem?')
+
+# XMLparser.__init__(arguments.source, [] )
 
 
 
