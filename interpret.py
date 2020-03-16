@@ -58,31 +58,87 @@ for x in range(1,len(sys.argv)):
 END OF ARGS PARSING SECTION
 """
 
-try:
-	tree = elemTree.parse(arguments.source)
-	# Valid root element
-	root = tree.getroot()
-	if root.tag != "program":
-		raise elemTree.ParseError("root element must be 'program'")
 
-	if "language" not in root.attrib:
-		raise elemTree.ParseError("missing attribute 'language'")
+#kontrolovat spravnost XML
 
-	for attrib, value in root.attrib.items():
-		if attrib == "language":
-			if value != "IPPcode20":
-				raise elemTree.ParseError("language must be 'IPPcode20' ")
-		elif attrib != "name" and attrib != "description":
-			raise elemTree.ParseError("program element can only contain language, name or description attributes")
-	print("zbehol som v pohode")
+# try:
+# 	tree = elemTree.parse(arguments.source)
+# 	# Valid root element
+# 	root = tree.getroot()
+# 	if root.tag != "program":
+# 		raise elemTree.ParseError("root element must be 'program'")
 
-except elemTree.ParseError as wrongxml:
-	sys.stderr.write("ERROR: wrong XML format (%s)!\n" % str(wrongxml))
-	exit(31)
-except FileNotFoundError:
-    sys.stderr.write("ERROR: Source file cannot be opened !\n")
-    exit(11)
+# 	if "language" not in root.attrib:
+# 		raise elemTree.ParseError("missing attribute 'language'")
 
+# 	for attrib, value in root.attrib.items():
+# 		if attrib == "language":
+# 			if value != "IPPcode20":
+# 				raise elemTree.ParseError("language must be 'IPPcode20' ")
+# 		elif attrib != "name" and attrib != "description":
+# 			raise elemTree.ParseError("program element can only contain language, name or description attributes")
+	
+# 	orderList = []
+# 	for i in range(0,len(root)):
+# 		orderList.append(str(i) +"@"+str(root[i].get('order')))
+# 		print(root[i].get('order'))
+# 	orderList[]
+# 	print (orderList)
+# 	for instr in root.iter('instruction'):
+# 		print (instr.get('order'), instr.get('opcode'))
+# 		for deepchild in instr:
+# 			print (deepchild.get('type'), deepchild.text.split('@'))
+		
+# 	print(" som v pohode")
+
+# except elemTree.ParseError as wrongxml:
+# 	sys.stderr.write("ERROR: wrong XML format (%s)!\n" % str(wrongxml))
+# 	exit(31)
+# except FileNotFoundError:
+#     sys.stderr.write("ERROR: Source file cannot be opened !\n")
+#     exit(11)
+
+
+class XMLparser:
+	def checkXML():
+		try:
+			tree = elemTree.parse(arguments.source)
+			# Valid root element
+			root = tree.getroot()
+			if root.tag != "program":
+				raise elemTree.ParseError("root element must be 'program'")
+
+			if "language" not in root.attrib:
+				raise elemTree.ParseError("missing attribute 'language'")
+
+			for attrib, value in root.attrib.items():
+				if attrib == "language":
+					if value != "IPPcode20":
+						raise elemTree.ParseError("language must be 'IPPcode20' ")
+				elif attrib != "name" and attrib != "description":
+					raise elemTree.ParseError("program element can only contain language, name or description attributes")
+			
+			orderList = []
+			for i in range(0,len(root)):
+				orderList.append(str(i) +"@"+str(root[i].get('order')))
+				print(root[i].get('order'))
+
+			print (orderList)
+			for instr in root.iter('instruction'):
+				print (instr.get('order'), instr.get('opcode'))
+				for deepchild in instr:
+					print (deepchild.get('type'), deepchild.text.split('@',1))	#first occurence
+				
+			print(" som v pohode")
+
+		except elemTree.ParseError as wrongxml:
+			sys.stderr.write("ERROR: wrong XML format (%s)!\n" % str(wrongxml))
+			exit(31)
+		except FileNotFoundError:
+		    sys.stderr.write("ERROR: Source file cannot be opened !\n")
+		    exit(11)
+
+XMLparser.checkXML()
 
 # class XMLparser:
 # 	def __init__(self, input_xml, stack): #, frames, flowControl):
