@@ -86,16 +86,15 @@ class XMLparser:
 
 	def checkBody(source):
 		instrList = []
-		instruction = []
+		checkArgCount = ['1', '2', '3']
+		checkType = ["int", "bool", "string", "label", "var", "type"]
 		for instr in source:
 			if (instr.tag != "instruction"):
 				raise elemTree.ParseError("can only contain 'instruction' subelements not: '%s'" % instr.tag)
 			if (instr.get('order') == None or instr.get('opcode') == None):
 				raise elemTree.ParseError("instruction needs 'order' and 'opcode'")
-			instruction = [instr.get('opcode')]
-			#print (instr.get('order'), instr.get('opcode'))
-			checkArgCount = ['1', '2', '3']
-			checkType = ["int", "bool", "string", "label", "var"]
+			instruction = []
+			instruction.append(instr.get('opcode'))
 			checkInt = 0
 			for deepchild in instr:
 				checkInt += 1
@@ -107,17 +106,20 @@ class XMLparser:
 					raise elemTree.ParseError("argument needs to have 'type' defined")
 				if (deepchild.get('type') not in checkType):
 					raise elemTree.ParseError("undefined type: '%s'" % deepchild.get('type'))
-				instruction.append(deepchild.text)
+				args = [deepchild.get('type'), deepchild.text]
+				instruction.append(args)
 				# print (deepchild.get('type'), deepchild.text.split('@',1))	#first occurence
 			instrList.append(instruction)
 
 		orderList = []
 		for i in range(0,len(source)):
 			try:
+				if int(source[i].get('order')) in orderList:
+					raise elemTree.ParseError("at least 2 same order types: '%s' exists many times" % source[i].get('order'))
 				orderList.append(int(source[i].get('order')))
 			except ValueError:
-				sys.stderr.write("ERROR: wrong 'order' type: %s!\n" % source[i].get('order'))
-				exit(31)
+				raise elemTree.ParseError("wrong 'order' type: '%s'" % source[i].get('order'))
+	
 		orderList = sorted(enumerate(orderList), key=lambda x: x[1])
 		return orderList, instrList
 
@@ -126,8 +128,8 @@ try:
 	xmlRoot = XMLparser.checkXML(arguments.source)	#checkXMLhead
 	orderList, instrList= XMLparser.checkBody(xmlRoot)		#check the rest of XML
 	program = ippcode_bank.Interpret()
-	program.checkInstr(orderList, instrList)
-	print (orderList, instrList)
+	program.checkInstr(orderList, instrList) 
+	
 
 except elemTree.ParseError as wrongxml:
 	sys.stderr.write("ERROR: wrong XML format-> %s!\n" % str(wrongxml))
