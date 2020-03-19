@@ -1,6 +1,6 @@
 import re
 import xml.etree.ElementTree as elemTree
-from xml.sax.saxutils import unescape
+import ippcode_dependencies
 
 TYPE = ['int', 'bool', 'string', 'nil']
 
@@ -30,12 +30,28 @@ INSTRUCTIONS =[ "MOVE",
 
 class ParseError(Exception):
 	pass
+class SemanticsError(Exception):
+	pass
+class WrongArgTypes(Exception):
+	pass
+class UndefinedVar(Exception):
+	pass
+class FrameError(Exception):
+	pass
+class MissingValue(Exception):
+	pass
+class WrongValue(Exception):
+	pass
+class StringError(Exception):
+	pass
 
 class Interpret:
 	def __init__(self):
 		self.instructions = []
 		self.labels = []
 		self.calls = []
+		self.labelIndex = []		#saves index of LABEL opcode in the correct order, so it saves time
+		self.run = ippcode_dependencies.Frames()
 
 	def checkArgCount(self, instr, countGiven, neededCount):
 		if countGiven == neededCount:
@@ -66,7 +82,7 @@ class Interpret:
 					self.checkVar(xmlInstr[ind][1])
 				elif xmlInstr[ind][0].upper() == "CALL":
 					self.checkArgCount(xmlInstr[ind][0] ,len(xmlInstr[ind]) -1, 1)
-					self.checkLabel(xmlInstr[ind][1])
+					self.checkLabel(xmlInstr[ind][1], False)
 				elif xmlInstr[ind][0].upper() == "RETURN":
 					self.checkArgCount(xmlInstr[ind][0] ,len(xmlInstr[ind]) -1, 0)
 				elif xmlInstr[ind][0].upper() == "PUSHS":
@@ -170,19 +186,18 @@ class Interpret:
 					self.checkSymb(xmlInstr[ind][2])
 				elif xmlInstr[ind][0].upper() == "LABEL":
 					self.checkArgCount(xmlInstr[ind][0] ,len(xmlInstr[ind]) -1, 1)
-					self.checkLabel(xmlInstr[ind][1])
-					# self.add_label(xmlInstr[ind][1], position)
+					self.checkLabel(xmlInstr[ind][1], ind)
 				elif xmlInstr[ind][0].upper() == "JUMP":
 					self.checkArgCount(xmlInstr[ind][0] ,len(xmlInstr[ind]) -1, 1)
-					self.checkLabel(xmlInstr[ind][1])
+					self.checkLabel(xmlInstr[ind][1], False)
 				elif xmlInstr[ind][0].upper() == "JUMPIFEQ":
 					self.checkArgCount(xmlInstr[ind][0] ,len(xmlInstr[ind]) -1, 3)
-					self.checkLabel(xmlInstr[ind][1])
+					self.checkLabel(xmlInstr[ind][1], False)
 					self.checkSymb(xmlInstr[ind][2])
 					self.checkSymb(xmlInstr[ind][3])
 				elif xmlInstr[ind][0].upper() == "JUMPIFNEQ":
 					self.checkArgCount(xmlInstr[ind][0] ,len(xmlInstr[ind]) -1, 3)
-					self.checkLabel(xmlInstr[ind][1])
+					self.checkLabel(xmlInstr[ind][1], False)
 					self.checkSymb(xmlInstr[ind][2])
 					self.checkSymb(xmlInstr[ind][3])
 				elif xmlInstr[ind][0].upper() == "EXIT":
@@ -194,6 +209,7 @@ class Interpret:
 				elif xmlInstr[ind][0].upper() == "BREAK":
 					self.checkArgCount(xmlInstr[ind][0] ,len(xmlInstr[ind]) -1, 0)
 				temp = [xmlInstr[order[i][0]][0], xmlInstr[order[i][0]][1:]]
+				#vlozenie instrukcii s argumentami v poradi ako sa budu vykonavat
 				self.instructions.append(temp)
 				#self.instructions.append({"instruction": xmlInstr[order[i][0]][0], "args": xmlInstr[order[i][0]][1:]})
 
@@ -204,11 +220,16 @@ class Interpret:
 		#najskor najde odpovedajucu instrukciu
 		# vpripade uspechu hlada danu vec v danej instrukcii 
 		# v pripade uspechu to tu vyprintuje
+		
+		# print(self.labelIndex, self.labels)				
+		#print(self.instructions[self.labelIndex[0]][1][0][1])
+		# print(self.instructions)
 		for item in self.instructions:
 			if "DEFVAR" in item:
 				for found in item[1]:
 					if "GF@space" in found:
 						print(found[1])
+		self.interpret()
 
 	def checkVar(self, arg):
 		if arg[0] != 'var' :
@@ -244,7 +265,6 @@ class Interpret:
 			elif ('#' in arg[1] or re.search(r"\s", arg[1])):
 				raise ParseError("invalid 'string' value: '%s'" % arg[1])
 			else:
-				arg[1] = unescape(arg[1])	
 				for i in range(0,len(arg[1])):
 					if i == len(arg[1]):
 						break;
@@ -258,11 +278,19 @@ class Interpret:
 		else:
 			raise ParseError("invalid symbol: cannot be '%s'" % arg[0])
 
-	def checkLabel(self, arg):
+	def checkLabel(self, arg, ind):
 		if arg[0] != 'label':
 			raise ParseError("type label is needed, not '%s'" % arg[0])
 		if not re.match(r"^[a-zá-žA-ZÁ-Ž_\-$&%*?!][\w\-$&%*?!]*$", arg[1]):
 			raise ParseError("label '%s' is invalid" % arg[1])
+		
+		if ind != False:
+			if arg[1] in self.labels:
+				sys.stderr.write("Redefinition of label '%s'!\n" % arg[1])
+				exit(52)
+			else:
+				self.labels.append(arg[1])
+				self.labelIndex.append(ind)
 
 	def checkType(self, arg):
 		if arg[0] != 'type':
@@ -270,6 +298,151 @@ class Interpret:
 		if arg[1] not in TYPE:
 			raise ParseError("invalid type: '%s'" % arg[1])
 
-	
+	def interpret(self):
+		current = 0
+		while current < len(self.instructions):
+			if self.instructions[current][0].upper() == "MOVE":
+				pass
+			elif self.instructions[current][0].upper() == "CREATEFRAME":
+				self.run.tempFrame = []
+			elif self.instructions[current][0].upper() == "PUSHFRAME":
+				self.run.pushFrame()
+			elif self.instructions[current][0].upper() == "POPFRAME":
+				self.run.popFrame()
+			elif self.instructions[current][0].upper() == "DEFVAR":
+				pass
+			elif self.instructions[current][0].upper() == "CALL":
+				pass
+				pass
+			elif self.instructions[current][0].upper() == "RETURN":
+				pass
+			elif self.instructions[current][0].upper() == "PUSHS":
+				pass
+				pass
+			elif self.instructions[current][0].upper() == "POPS":
+				pass
+				pass
+			elif self.instructions[current][0].upper() == "ADD":
+				pass
+				pass
+				pass
+				pass
+			elif self.instructions[current][0].upper() == "SUB":
+				pass
+				pass
+				pass
+				pass
+			elif self.instructions[current][0].upper() == "MUL":
+				pass
+				pass
+				pass
+				pass
+			elif self.instructions[current][0].upper() == "IDIV":
+				pass
+				pass
+				pass
+				pass
+			elif self.instructions[current][0].upper() == "DIV":
+				pass
+				pass
+				pass
+				pass
+			elif self.instructions[current][0].upper() == "LT":
+				pass
+				pass
+				pass
+				pass
+			elif self.instructions[current][0].upper() == "GT":
+				pass
+				pass
+				pass
+				pass
+			elif self.instructions[current][0].upper() == "EQ":
+				pass
+				pass
+				pass
+				pass
+			elif self.instructions[current][0].upper() == "AND":
+				pass
+				pass
+				pass
+				pass
+			elif self.instructions[current][0].upper() == "OR":
+				pass
+				pass
+				pass
+				pass
+			elif self.instructions[current][0].upper() == "NOT":
+				pass
+				pass
+				pass
+			elif self.instructions[current][0].upper() == "INT2CHAR":
+				pass
+				pass
+				pass
+			elif self.instructions[current][0].upper() == "STRI2INT":
+				pass
+				pass
+				pass
+				pass
+			elif self.instructions[current][0].upper() == "READ":
+				pass
+				pass
+				pass
+			elif self.instructions[current][0].upper() == "WRITE":
+				pass
+				pass
+			elif self.instructions[current][0].upper() == "CONCAT":
+				pass
+				pass
+				pass
+				pass
+			elif self.instructions[current][0].upper() == "STRLEN":
+				pass
+				pass
+				pass
+			elif self.instructions[current][0].upper() == "GETCHAR":
+				pass
+				pass
+				pass
+				pass
+			elif self.instructions[current][0].upper() == "SETCHAR":
+				pass
+				pass
+				pass
+				pass
+			elif self.instructions[current][0].upper() == "TYPE":
+				pass
+				pass
+				pass
+			elif self.instructions[current][0].upper() == "LABEL":
+				pass
+				pass
+			elif self.instructions[current][0].upper() == "JUMP":
+				pass
+				pass
+			elif self.instructions[current][0].upper() == "JUMPIFEQ":
+				pass
+				pass
+				pass
+				pass
+			elif self.instructions[current][0].upper() == "JUMPIFNEQ":
+				pass
+				pass
+				pass
+				pass
+			elif self.instructions[current][0].upper() == "EXIT":
+				pass
+				pass
+			elif self.instructions[current][0].upper() == "DPRINT":
+				pass
+				pass
+			elif self.instructions[current][0].upper() == "BREAK":
+				pass
+
+			current += 1
+
+
 		
+			
 

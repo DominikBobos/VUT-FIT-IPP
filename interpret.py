@@ -129,7 +129,6 @@ try:
 	orderList, instrList= XMLparser.checkBody(xmlRoot)		#check the rest of XML
 	program = ippcode_bank.Interpret()
 	program.checkInstr(orderList, instrList) 
-	
 
 except elemTree.ParseError as wrongxml:
 	sys.stderr.write("ERROR: wrong XML format-> %s!\n" % str(wrongxml))
@@ -140,3 +139,24 @@ except FileNotFoundError:
 except ippcode_bank.ParseError as wrongsyntax:
 	sys.stderr.write("ERROR: syntax error-> %s!\n" % str(wrongsyntax))
 	exit(32)
+except ippcode_bank.SemanticsError as wrongsemantics:
+	sys.stderr.write("ERROR: semantics error-> %s!\n" % str(wrongsemantics))
+	exit(52)
+except ippcode_bank.WrongArgTypes as wrongargs:
+	sys.stderr.write("ERROR: wrong operands type-> %s!\n" % str(wrongargs))
+	exit(53)
+except ippcode_bank.UndefinedVar as wrongvar:
+	sys.stderr.write("ERROR: variable error-> %s!\n" % str(wrongvar))
+	exit(54)
+except ippcode_bank.FrameError as frameError:
+	sys.stderr.write("ERROR: %s !\n" % str(frameError))
+	exit(55)
+except ippcode_bank.MissingValue as missingValue:
+	sys.stderr.write("ERROR: missing value-> %s!\n" % str(missingValue))
+	exit(56)
+except ippcode_bank.WrongValue as wrongvalue:
+	sys.stderr.write("ERROR: wrong value-> %s!\n" % str(wrongvalue))
+	exit(57)
+except ippcode_bank.StringError as wrongstring:
+	sys.stderr.write("ERROR: error with string-> %s!\n" % str(wrongstring))
+	exit(58)
