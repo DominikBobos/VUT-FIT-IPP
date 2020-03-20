@@ -52,6 +52,7 @@ class Interpret:
 		self.calls = []
 		self.labelIndex = []		#saves index of LABEL opcode in the correct order, so it saves time
 		self.run = ippcode_dependencies.Frames()
+		self.var = ippcode_dependencies.Variables()
 
 	def checkArgCount(self, instr, countGiven, neededCount):
 		if countGiven == neededCount:
@@ -223,7 +224,7 @@ class Interpret:
 		
 		# print(self.labelIndex, self.labels)				
 		#print(self.instructions[self.labelIndex[0]][1][0][1])
-		# print(self.instructions)
+		#print(self.instructions)
 		for item in self.instructions:
 			if "DEFVAR" in item:
 				for found in item[1]:
@@ -284,13 +285,13 @@ class Interpret:
 		if not re.match(r"^[a-zá-žA-ZÁ-Ž_\-$&%*?!][\w\-$&%*?!]*$", arg[1]):
 			raise ParseError("label '%s' is invalid" % arg[1])
 		
-		if ind != False:
-			if arg[1] in self.labels:
+		if ind != False:	#if ==false , that means instructions CALL JUMP etc
+			if arg[1] in self.labels:	
 				sys.stderr.write("Redefinition of label '%s'!\n" % arg[1])
 				exit(52)
-			else:
+			else:			#this means instruction LABEL
 				self.labels.append(arg[1])
-				self.labelIndex.append(ind)
+				self.labelIndex.append(ind)		#saves index in the whole code, to faster execution
 
 	def checkType(self, arg):
 		if arg[0] != 'type':
@@ -302,7 +303,8 @@ class Interpret:
 		current = 0
 		while current < len(self.instructions):
 			if self.instructions[current][0].upper() == "MOVE":
-				pass
+				self.var.move(self.instructions[current][1][0][1].split('@',1),self.instructions[current][1][1])
+				print(self.var.frames.GF)
 			elif self.instructions[current][0].upper() == "CREATEFRAME":
 				self.run.tempFrame = []
 			elif self.instructions[current][0].upper() == "PUSHFRAME":
@@ -310,7 +312,7 @@ class Interpret:
 			elif self.instructions[current][0].upper() == "POPFRAME":
 				self.run.popFrame()
 			elif self.instructions[current][0].upper() == "DEFVAR":
-				pass
+				self.var.defVar(self.instructions[current][1][0][1].split('@',1))
 			elif self.instructions[current][0].upper() == "CALL":
 				pass
 				pass
