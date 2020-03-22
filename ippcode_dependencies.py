@@ -3,7 +3,7 @@ import ippcode_bank as ib
 
 
 
-class Frames:
+class Dependencies:
 	def __init__(self):
 		self.stackFrame = []
 		self.TF = None
@@ -58,32 +58,32 @@ class Frames:
 
 
 
-class Variables:
-	def __init__(self):
-		self.frames = Frames()
+# class Variables:
+# 	def __init__(self):
+# 		self.frames = Frames()
 
 	def defVar(self, var):
 		if var[0] == "GF":
-			found, foundvar = self.frames.getFromGF(var[1])
+			found, foundvar = self.getFromGF(var[1])
 			if found != -1:
 				raise ib.SemanticsError("redefinition of var '{0}' in '{1}'".format(var[1], var[0]))  
 			else:
 				typeAndVar = ["noneType", var[1], "noValue"]
-				self.frames.GF.append(typeAndVar)
+				self.GF.append(typeAndVar)
 		elif var[0] == "TF":
-			found, foundvar = self.frames.getFromTF(var[1])
+			found, foundvar = self.getFromTF(var[1])
 			if found != -1:
 				raise ib.SemanticsError("redefinition of var '{0}' in '{1}'".format(var[1], var[0]))
 			else:
 				typeAndVar = ["noneType", var[1], "noValue"]
-				self.frames.TF.append(typeAndVar)
+				self.TF.append(typeAndVar)
 		elif var[0] == "LF":
-			found, foundvar = self.frames.getFromLF(var[1])
+			found, foundvar = self.getFromLF(var[1])
 			if found != -1:
 				raise ib.SemanticsError("redefinition of var '{0} in '{1}'".format(var[1], var[0]))
 			else:
 				typeAndVar = ["noneType", var[1], "noValue"]
-				self.frames.LF.append(typeAndVar)
+				self.LF.append(typeAndVar)
 
 	def move(self, var, symb):
 		found = False
@@ -91,51 +91,44 @@ class Variables:
 		foundS = False
 		foundSymb = []
 		if var[0] == "GF":
-			found, foundvar = self.frames.getFromGF(var[1])
+			found, foundvar = self.getFromGF(var[1])
 			if found == -1:
 				raise ib.UndefinedVar("var '{0}' in '{1}' is not defined".format(var[1], var[0]))  
 		elif var[0] == "TF":
-			found, foundvar = self.frames.getFromTF(var[1])
+			found, foundvar = self.getFromTF(var[1])
 			if found == -1:
 				raise ib.UndefinedVar("var '{0}' in '{1}' is not defined".format(var[1], var[0])) 
 		elif var[0] == "LF":
-			found, foundvar = self.frames.getFromLF(var[1])
+			found, foundvar = self.getFromLF(var[1])
 			if found == -1:
 				raise ib.UndefinedVar("var '{0}' in '{1}' is not defined".format(var[1], var[0])) 
 
 		if symb[0] == 'var':
-			symb = symb.split('@',1)
+			symb = symb[1].split('@',1)
 			if symb[0] == "GF":
-				foundS, foundSymb = self.frames.getFromGF(var[1])
+				foundS, foundSymb = self.getFromGF(var[1])
 				if foundS == -1:
 					raise ib.UndefinedVar("var '{0}' in '{1}' is not defined".format(symb[1], symb[0]))  
 			elif symb[0] == "TF":
-				foundS, foundSymb = self.frames.getFromTF(var[1])
+				foundS, foundSymb = self.getFromTF(var[1])
 				if foundS == -1:
 					raise ib.UndefinedVar("var '{0}' in '{1}' is not defined".format(symb[1], symb[0])) 
 			elif symb[0] == "LF":
-				foundS, foundSymb = self.frames.getFromLF(var[1])
+				foundS, foundSymb = self.getFromLF(var[1])
 				if foundS == -1:
 					raise ib.UndefinedVar("var '{0}' in '{1}' is not defined".format(symb[1], symb[0])) 
-			if var[0] == "GF":
-				self.frames.GF[found][0] = foundSymb[0]
-				self.frames.GF[found][2] = foundSymb[2]
-			elif var[0] == "TF":
-				self.frames.TF[found][0] = foundSymb[0]
-				self.frames.TF[found][2] = foundSymb[2]
-			elif var[0] == "LF":
-				self.frames.LF[found][0] = foundSymb[0]
-				self.frames.LF[found][2] = foundSymb[2]
-		else:
-			if var[0] == "GF":
-				self.frames.GF[found][0] = symb[0]
-				self.frames.GF[found][2] = symb[1]
-			elif var[0] == "TF":
-				self.frames.TF[found][0] = symb[0]
-				self.frames.TF[found][2] = symb[1]
-			elif var[0] == "LF":
-				self.frames.LF[found][0] = symb[0]
-				self.frames.LF[found][2] = symb[1]
+			symb[0] = foundSymb[0]
+			symb[1] = foundSymb[2]
+
+		if var[0] == "GF":
+			self.GF[found][0] = symb[0]
+			self.GF[found][2] = symb[1]
+		elif var[0] == "TF":
+			self.TF[found][0] = symb[0]
+			self.TF[found][2] = symb[1]
+		elif var[0] == "LF":
+			self.LF[found][0] = symb[0]
+			self.LF[found][2] = symb[1]
 
 
 

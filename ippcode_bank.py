@@ -51,8 +51,7 @@ class Interpret:
 		self.labels = []
 		self.calls = []
 		self.labelIndex = []		#saves index of LABEL opcode in the correct order, so it saves time
-		self.run = ippcode_dependencies.Frames()
-		self.var = ippcode_dependencies.Variables()
+		self.run = ippcode_dependencies.Dependencies()
 
 	def checkArgCount(self, instr, countGiven, neededCount):
 		if countGiven == neededCount:
@@ -83,7 +82,7 @@ class Interpret:
 					self.checkVar(xmlInstr[ind][1])
 				elif xmlInstr[ind][0].upper() == "CALL":
 					self.checkArgCount(xmlInstr[ind][0] ,len(xmlInstr[ind]) -1, 1)
-					self.checkLabel(xmlInstr[ind][1], False)
+					self.checkLabel(xmlInstr[ind][1], -1)
 				elif xmlInstr[ind][0].upper() == "RETURN":
 					self.checkArgCount(xmlInstr[ind][0] ,len(xmlInstr[ind]) -1, 0)
 				elif xmlInstr[ind][0].upper() == "PUSHS":
@@ -187,18 +186,18 @@ class Interpret:
 					self.checkSymb(xmlInstr[ind][2])
 				elif xmlInstr[ind][0].upper() == "LABEL":
 					self.checkArgCount(xmlInstr[ind][0] ,len(xmlInstr[ind]) -1, 1)
-					self.checkLabel(xmlInstr[ind][1], ind)
+					self.checkLabel(xmlInstr[ind][1], i)
 				elif xmlInstr[ind][0].upper() == "JUMP":
 					self.checkArgCount(xmlInstr[ind][0] ,len(xmlInstr[ind]) -1, 1)
-					self.checkLabel(xmlInstr[ind][1], False)
+					self.checkLabel(xmlInstr[ind][1], -1)
 				elif xmlInstr[ind][0].upper() == "JUMPIFEQ":
 					self.checkArgCount(xmlInstr[ind][0] ,len(xmlInstr[ind]) -1, 3)
-					self.checkLabel(xmlInstr[ind][1], False)
+					self.checkLabel(xmlInstr[ind][1], -1)
 					self.checkSymb(xmlInstr[ind][2])
 					self.checkSymb(xmlInstr[ind][3])
 				elif xmlInstr[ind][0].upper() == "JUMPIFNEQ":
 					self.checkArgCount(xmlInstr[ind][0] ,len(xmlInstr[ind]) -1, 3)
-					self.checkLabel(xmlInstr[ind][1], False)
+					self.checkLabel(xmlInstr[ind][1], -1)
 					self.checkSymb(xmlInstr[ind][2])
 					self.checkSymb(xmlInstr[ind][3])
 				elif xmlInstr[ind][0].upper() == "EXIT":
@@ -224,12 +223,12 @@ class Interpret:
 		
 		# print(self.labelIndex, self.labels)				
 		#print(self.instructions[self.labelIndex[0]][1][0][1])
-		#print(self.instructions)
-		for item in self.instructions:
-			if "DEFVAR" in item:
-				for found in item[1]:
-					if "GF@space" in found:
-						print(found[1])
+		# print(self.instructions)
+		# for item in self.instructions:
+		# 	if "DEFVAR" in item:
+		# 		for found in item[1]:
+		# 			if "GF@space" in found:
+		# 				print(found[1])
 		self.interpret()
 
 	def checkVar(self, arg):
@@ -284,11 +283,9 @@ class Interpret:
 			raise ParseError("type label is needed, not '%s'" % arg[0])
 		if not re.match(r"^[a-zá-žA-ZÁ-Ž_\-$&%*?!][\w\-$&%*?!]*$", arg[1]):
 			raise ParseError("label '%s' is invalid" % arg[1])
-		
-		if ind != False:	#if ==false , that means instructions CALL JUMP etc
-			if arg[1] in self.labels:	
-				sys.stderr.write("Redefinition of label '%s'!\n" % arg[1])
-				exit(52)
+		if ind != -1:	#if == -1 , that means instructions CALL JUMP etc
+			if arg[1] in self.labels:
+				raise SemanticsError("Redefinition of label '%s'" % arg[1])	
 			else:			#this means instruction LABEL
 				self.labels.append(arg[1])
 				self.labelIndex.append(ind)		#saves index in the whole code, to faster execution
@@ -299,12 +296,22 @@ class Interpret:
 		if arg[1] not in TYPE:
 			raise ParseError("invalid type: '%s'" % arg[1])
 
+	#goes to entered label and returns the index where the label is located in code)
+	def goToLabel(self, label, call):
+		if label not in self.labels: 
+			raise SemanticsError("could not go to label %s , it is not defined" % label)
+		else: 
+			if call != -1:
+				self.calls.append(call + 1)
+			move = self.labelIndex[self.labels.index(label)]
+			return move
+
 	def interpret(self):
 		current = 0
 		while current < len(self.instructions):
 			if self.instructions[current][0].upper() == "MOVE":
-				self.var.move(self.instructions[current][1][0][1].split('@',1),self.instructions[current][1][1])
-				print(self.var.frames.GF)
+				self.run.move(self.instructions[current][1][0][1].split('@',1),self.instructions[current][1][1])
+				# print(self.run.GF)
 			elif self.instructions[current][0].upper() == "CREATEFRAME":
 				self.run.tempFrame = []
 			elif self.instructions[current][0].upper() == "PUSHFRAME":
@@ -312,12 +319,15 @@ class Interpret:
 			elif self.instructions[current][0].upper() == "POPFRAME":
 				self.run.popFrame()
 			elif self.instructions[current][0].upper() == "DEFVAR":
-				self.var.defVar(self.instructions[current][1][0][1].split('@',1))
+				self.run.defVar(self.instructions[current][1][0][1].split('@',1))
 			elif self.instructions[current][0].upper() == "CALL":
-				pass
-				pass
+				current = self.goToLabel(self.instructions[current][1][0][1], current)
+				print(self.labelIndex, self.labels, self.calls)
 			elif self.instructions[current][0].upper() == "RETURN":
-				pass
+				if self.calls == []:
+					raise MissingValue("empty CALL stack")
+				else:
+					current = self.calls.pop(-1)
 			elif self.instructions[current][0].upper() == "PUSHS":
 				pass
 				pass
