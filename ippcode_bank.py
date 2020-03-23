@@ -2,7 +2,7 @@ import re
 import xml.etree.ElementTree as elemTree
 import ippcode_dependencies
 
-TYPE = ['int', 'bool', 'string', 'nil']
+TYPE = ['int', 'bool', 'string']	#tuto nil nie je
 
 FRAME = ['LF', 'TF', 'GF']
 
@@ -230,6 +230,7 @@ class Interpret:
 		# 			if "GF@space" in found:
 		# 				print(found[1])
 		self.interpret()
+		print(self.run.GF)
 
 	def checkVar(self, arg):
 		if arg[0] != 'var' :
@@ -310,8 +311,8 @@ class Interpret:
 		current = 0
 		while current < len(self.instructions):
 			if self.instructions[current][0].upper() == "MOVE":
-				self.run.move(self.instructions[current][1][0][1].split('@',1),self.instructions[current][1][1])
-				# print(self.run.GF)
+				self.run.move(self.instructions[current][1][0][1].split('@',1),
+							self.instructions[current][1][1])
 			elif self.instructions[current][0].upper() == "CREATEFRAME":
 				self.run.tempFrame = []
 			elif self.instructions[current][0].upper() == "PUSHFRAME":
@@ -322,38 +323,31 @@ class Interpret:
 				self.run.defVar(self.instructions[current][1][0][1].split('@',1))
 			elif self.instructions[current][0].upper() == "CALL":
 				current = self.goToLabel(self.instructions[current][1][0][1], current)
-				print(self.labelIndex, self.labels, self.calls)
 			elif self.instructions[current][0].upper() == "RETURN":
 				if self.calls == []:
 					raise MissingValue("empty CALL stack")
 				else:
 					current = self.calls.pop(-1)
 			elif self.instructions[current][0].upper() == "PUSHS":
-				pass
-				pass
+				self.run.pushs(self.instructions[current][1][0])
 			elif self.instructions[current][0].upper() == "POPS":
-				pass
-				pass
+				self.run.pops(self.instructions[current][1][0][1].split('@',1))
 			elif self.instructions[current][0].upper() == "ADD":
-				pass
-				pass
-				pass
-				pass
+				self.run.calculate("ADD",self.instructions[current][1][0][1].split('@',1),
+										self.instructions[current][1][1],
+										self.instructions[current][1][2])
 			elif self.instructions[current][0].upper() == "SUB":
-				pass
-				pass
-				pass
-				pass
+				self.run.calculate("SUB",self.instructions[current][1][0][1].split('@',1),
+										self.instructions[current][1][1],
+										self.instructions[current][1][2])
 			elif self.instructions[current][0].upper() == "MUL":
-				pass
-				pass
-				pass
-				pass
+				self.run.calculate("MUL",self.instructions[current][1][0][1].split('@',1),
+										self.instructions[current][1][1],
+										self.instructions[current][1][2])
 			elif self.instructions[current][0].upper() == "IDIV":
-				pass
-				pass
-				pass
-				pass
+				self.run.calculate("IDIV",self.instructions[current][1][0][1].split('@',1),
+										self.instructions[current][1][1],
+										self.instructions[current][1][2])
 			elif self.instructions[current][0].upper() == "DIV":
 				pass
 				pass
@@ -398,12 +392,10 @@ class Interpret:
 				pass
 				pass
 			elif self.instructions[current][0].upper() == "READ":
-				pass
-				pass
-				pass
+				self.run.read(self.instructions[current][1][0][1].split('@',1),
+							self.instructions[current][1][1][1])
 			elif self.instructions[current][0].upper() == "WRITE":
-				pass
-				pass
+				self.run.write(self.instructions[current][1][0])
 			elif self.instructions[current][0].upper() == "CONCAT":
 				pass
 				pass
