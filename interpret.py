@@ -87,7 +87,7 @@ class XMLparser:
 	def checkBody(source):
 		instrList = []
 		checkArgCount = ['1', '2', '3']
-		checkType = ["int", "bool", "string", "label", "var", "type"]
+		checkType = ["int", "bool", "string", "label", "var", "type", "nil"]
 		for instr in source:
 			if (instr.tag != "instruction"):
 				raise elemTree.ParseError("can only contain 'instruction' subelements not: '%s'" % instr.tag)

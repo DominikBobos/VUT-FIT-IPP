@@ -1,6 +1,7 @@
 import re
 import xml.etree.ElementTree as elemTree
 import ippcode_dependencies
+import sys
 
 TYPE = ['int', 'bool', 'string']	#tuto nil nie je
 
@@ -300,7 +301,7 @@ class Interpret:
 	#goes to entered label and returns the index where the label is located in code)
 	def goToLabel(self, label, call):
 		if label not in self.labels: 
-			raise SemanticsError("could not go to label %s , it is not defined" % label)
+			raise SemanticsError("could not go to label '%s', it is not defined" % label)
 		else: 
 			if call != -1:
 				self.calls.append(call + 1)
@@ -308,8 +309,10 @@ class Interpret:
 			return move
 
 	def interpret(self):
+		instrCount = 0
 		current = 0
 		while current < len(self.instructions):
+			instrCount += 1
 			if self.instructions[current][0].upper() == "MOVE":
 				self.run.move(self.instructions[current][1][0][1].split('@',1),
 							self.instructions[current][1][1])
@@ -349,9 +352,6 @@ class Interpret:
 										self.instructions[current][1][1],
 										self.instructions[current][1][2])
 			elif self.instructions[current][0].upper() == "DIV":
-				pass
-				pass
-				pass
 				pass
 			elif self.instructions[current][0].upper() == "LT":
 				pass
@@ -397,34 +397,27 @@ class Interpret:
 			elif self.instructions[current][0].upper() == "WRITE":
 				self.run.write(self.instructions[current][1][0])
 			elif self.instructions[current][0].upper() == "CONCAT":
-				pass
-				pass
-				pass
-				pass
+				self.run.concat(self.instructions[current][1][0][1].split('@',1),
+								self.instructions[current][1][1],
+								self.instructions[current][1][2])
 			elif self.instructions[current][0].upper() == "STRLEN":
-				pass
-				pass
-				pass
+				self.run.strlen(self.instructions[current][1][0][1].split('@',1),
+								self.instructions[current][1][1])
 			elif self.instructions[current][0].upper() == "GETCHAR":
-				pass
-				pass
-				pass
-				pass
+				self.run.getchar(self.instructions[current][1][0][1].split('@',1),
+								self.instructions[current][1][1],
+								self.instructions[current][1][2])
 			elif self.instructions[current][0].upper() == "SETCHAR":
-				pass
-				pass
-				pass
-				pass
+				self.run.setchar(self.instructions[current][1][0][1].split('@',1),
+								self.instructions[current][1][1],
+								self.instructions[current][1][2])
 			elif self.instructions[current][0].upper() == "TYPE":
-				pass
-				pass
-				pass
+				self.run.instrType(self.instructions[current][1][0][1].split('@',1),
+								self.instructions[current][1][1])
 			elif self.instructions[current][0].upper() == "LABEL":
-				pass
-				pass
+				pass #did it earlier
 			elif self.instructions[current][0].upper() == "JUMP":
-				pass
-				pass
+				current = self.goToLabel(self.instructions[current][1][0][1], -1)
 			elif self.instructions[current][0].upper() == "JUMPIFEQ":
 				pass
 				pass
@@ -436,14 +429,26 @@ class Interpret:
 				pass
 				pass
 			elif self.instructions[current][0].upper() == "EXIT":
-				pass
-				pass
+				self.run.instrExit(self.instructions[current][1][0])
 			elif self.instructions[current][0].upper() == "DPRINT":
-				pass
-				pass
+				self.run.dprint(self.instructions[current][1][0])
 			elif self.instructions[current][0].upper() == "BREAK":
-				pass
-
+				justToBeExact = 'th'
+				if current == 1:
+					justToBeExact = 'st'
+				elif current == 2:
+					justToBeExact = 'nd'
+				elif current == 3:
+					justToBeExact = 'rd'
+				sys.stderr.write(
+"""Currently providing instruction:				{0}{6} instruction (out of {7})
+Count of executed instructions were (this one excluded): 	{1}
+Currently in data stack:	{2}
+Currently in Global Frame:	{3}
+Currently in Temporary Frame:	{4}
+Currently in Local Frame:	{5}
+""".format(current +1,instrCount -1, self.run.dataStack, self.run.GF, 
+	self.run.TF, self.run.LF,justToBeExact,len(self.instructions)))
 			current += 1
 
 

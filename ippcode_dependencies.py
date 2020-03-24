@@ -155,7 +155,10 @@ class Dependencies:
 		elif op == 'MUL':
 			self.setTypeValue(var[0],varIndex, 'int', symb1[1] * symb2[1])
 		elif op == 'IDIV':
-			self.setTypeValue(var[0],varIndex, 'int', symb1[1] // symb2[1])
+			try:
+				self.setTypeValue(var[0],varIndex, 'int', symb1[1] // symb2[1])
+			except ZeroDivisionError:
+				raise ib.WrongValue("Zero division error")
 	
 	def pushs(self, symb):
 		symbIndex, symbFound = self.foundVar(symb, True)
@@ -201,6 +204,79 @@ class Dependencies:
 			print(symbFound[2],end='')
 		elif symbFound[0] == 'string':
 			print(symbFound[2],end='')
+
+	def concat(self, var, symb1, symb2):
+		varIndex, varFound = self.foundVar(var, False)
+		symb1Index, symb1Found = self.foundVar(symb1, True)
+		symb2Index, symb2Found = self.foundVar(symb2, True)
+		if symb1Found[0] == 'string' and symb2Found[0] == 'string':
+			self.setTypeValue(var[0],varIndex, 'string', symb1[1] + symb2[1])
+		else:
+			raise ib.WrongArgTypes("CONCAT needs two string arguments.")
+
+	def strlen(self,var,symb):
+		varIndex, varFound = self.foundVar(var, False)
+		symbIndex, symbFound = self.foundVar(symb, True)
+		if symbFound[0] == 'string':
+			self.setTypeValue(var[0],varIndex, 'int', len(symbFound[2]))
+		else:
+			raise ib.WrongArgTypes("STRLEN needs string argument.")
+
+	def getchar(self, var, symb1, symb2):
+		varIndex, varFound = self.foundVar(var, False)
+		symb1Index, symb1Found = self.foundVar(symb1, True)
+		symb2Index, symb2Found = self.foundVar(symb2, True)
+		if symb1Found[0] == 'string' and symb2Found[0] == 'int':
+			try:
+				self.setTypeValue(var[0],varIndex, 'string', symb1Found[2][symb2Found[2]])
+			except IndexError:
+				raise ib.StringError("Index error, in function GETCHAR index '{0}' is out of range of '{1}'".format(
+					symb2Found[2], symb1Found[2]))
+		else:
+			raise ib.WrongArgTypes("GETCHAR needs first argument string, second arguments int.")
+
+	def setchar(self, var, symb1, symb2):
+		varIndex, varFound = self.foundVar(var, False)
+		symb1Index, symb1Found = self.foundVar(symb1, True)
+		symb2Index, symb2Found = self.foundVar(symb2, True)
+		print(varFound[2],symb1Found[2], symb2Found[2])
+		if varFound[0] == 'string' and symb1Found[0] == 'int' and symb2Found[0] == 'string':
+			try:
+				result = varFound[2][:symb1Found[2]] + symb2Found[2][0] + varFound[2][symb1Found[2]+1:]
+				self.setTypeValue(var[0], varIndex, 'string', result)
+			except IndexError:
+				raise ib.StringError("Index error, in function SETCHAR index '{0}' is out of range of '{1}'".format(
+					symb1Found[2], varFound[2]))
+		else:
+			raise ib.WrongArgTypes(
+				"SETCHAR needs variable of type string, first symbol of type int, second symbol of type string")
+
+	def instrType(self, var, symb):
+		varIndex, varFound = self.foundVar(var, False)
+		symbIndex, symbFound = self.foundVar(symb, True)
+
+		if symbFound[0] == '':
+			self.setTypeValue(var[0], varIndex, 'string', '')
+		elif symbFound[0] == 'nil':
+			self.setTypeValue(var[0], varIndex, 'string', 'nil')
+		elif symbFound[0] == 'bool':
+			self.setTypeValue(var[0], varIndex, 'string', 'bool')
+		elif symbFound[0] == 'int':
+			self.setTypeValue(var[0], varIndex, 'string', 'int')
+		elif symbFound[0] == 'string':
+			self.setTypeValue(var[0], varIndex, 'string', 'string')
+
+	def instrExit(self, symb):
+		symbIndex, symbFound = self.foundVar(symb, True)
+
+		if symbFound[0] != 'int' or (symbFound[2] < 0 or symbFound[2] > 49):
+			raise ib.WrongValue("value for EXIT should be int in range 0-49, not '%s'" % symbFound[2])
+		else:
+			sys.exit(symbFound[2])
+
+	def dprint(self, symb):
+		symbIndex, symbFound = self.foundVar(symb, True)
+		sys.stderr.write("%s" % symbFound[2])
 
 
 
