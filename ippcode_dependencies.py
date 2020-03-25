@@ -116,11 +116,7 @@ class Dependencies:
 	def move(self, var, symb):
 		varIndex, varFound = self.foundVar(var, False)
 		symbIndex, symbFound = self.foundVar(symb, True)
-
-		symb[0] = symbFound[0]
-		symb[1] = symbFound[2]
-
-		self.setTypeValue(var[0],varIndex,symb[0], symb[1])
+		self.setTypeValue(var[0],varIndex,symbFound[0], symbFound[2])
 
 	def calculate(self, op, var, symb1, symb2):
 		varIndex, varFound = self.foundVar(var, False)
@@ -142,29 +138,134 @@ class Dependencies:
 			raise ib.WrongArgTypes(
 			"operand ({3})'{0}' of type '{1}' is not of the correct type for operation '{2}'".format(
 				symb2Found[2], symb2Found[0], op, varOrSymb))
-
-		symb1[0] = symb1Found[0]
-		symb1[1] = symb1Found[2]
-		symb2[0] = symb2Found[0]
-		symb2[1] = symb2Found[2]
-
+		
 		if op == 'ADD':
-			self.setTypeValue(var[0],varIndex, 'int', symb1[1] + symb2[1])
+			self.setTypeValue(var[0],varIndex, 'int', symb1Found[2] + symb2Found[2])
 		elif op == 'SUB':
-			self.setTypeValue(var[0],varIndex, 'int', symb1[1] + symb2[1])
+			self.setTypeValue(var[0],varIndex, 'int', symb1Found[2] - symb2Found[2])
 		elif op == 'MUL':
-			self.setTypeValue(var[0],varIndex, 'int', symb1[1] * symb2[1])
+			self.setTypeValue(var[0],varIndex, 'int', symb1Found[2] * symb2Found[2])
 		elif op == 'IDIV':
 			try:
-				self.setTypeValue(var[0],varIndex, 'int', symb1[1] // symb2[1])
+				self.setTypeValue(var[0],varIndex, 'int', symb1Found[2] // symb2Found[2])
 			except ZeroDivisionError:
 				raise ib.WrongValue("Zero division error")
+
+	def conditions(self, op, var, symb1, symb2):
+		varIndex, varFound = self.foundVar(var, False)
+		symb1Index, symb1Found = self.foundVar(symb1, True)
+		symb2Index, symb2Found = self.foundVar(symb2, True)	
+
+		if symb1Found[0] != symb2Found[0] or (symb1Found[0] == 'nil' or symb2Found[0] == 'nil'):
+			if op == 'EQ' and (symb1Found[0] == 'nil' or symb2Found[0] == 'nil'):
+				pass
+			else:
+				raise ib.WrongArgTypes(
+				"different types for relational instructions, '{0}'('{1}') '{2}'('{3}')".format(
+					symb1Found[2],symb1Found[0],symb2Found[2], symb2Found[0]))
+		if symb1Found[0] == 'bool':
+			if symb1Found[2] == 'true':
+				symb1Found[2] == True
+			else:
+				symb1Found[2] == False
+		if symb2Found[0] == 'bool':
+			if symb2Found[2] == 'true':
+				symb2Found[2] == True
+			else:
+				symb2Found[2] == False
+		if op == 'LT':
+			if symb1Found[2] < symb2Found[2]:
+				self.setTypeValue(var[0],varIndex, 'bool', 'true')
+			else:
+				self.setTypeValue(var[0],varIndex, 'bool', 'false')
+		elif op == 'GT':
+			if symb1Found[2] > symb2Found[2]:
+				self.setTypeValue(var[0],varIndex, 'bool', 'true')
+			else:
+				self.setTypeValue(var[0],varIndex, 'bool', 'false')
+		elif op == 'EQ':
+			if symb1Found[2] == 'nil' or symb2Found[2] == 'nil':
+				if symb1Found[2] == symb2Found[2]:
+					self.setTypeValue(var[0],varIndex, 'bool', 'true')
+				else:
+					self.setTypeValue(var[0],varIndex, 'bool', 'false')	
+			else:
+				if symb1Found[2] == symb2Found[2]:
+					self.setTypeValue(var[0],varIndex, 'bool', 'true')
+				else:
+					self.setTypeValue(var[0],varIndex, 'bool', 'false')
 	
+	def logical(self, op, var, symb1, symb2 = []):
+		varIndex, varFound = self.foundVar(var, False)
+		symb1Index, symb1Found = self.foundVar(symb1, True)
+		symb2Found = ['bool', []]	#just because of 'NOT' uses only 2 args
+		if op != 'NOT':
+			symb2Index, symb2Found = self.foundVar(symb2, True)	
+		if op == 'NOT' and symb1Found[0] != 'bool':
+			raise ib.WrongArgTypes(
+			"Logical operations need bool type, not '{0}'('{1}')".format(
+				symb1Found[2],symb1Found[0]))
+		elif symb1Found[0] != 'bool' or symb2Found[0] != 'bool':
+			raise ib.WrongArgTypes(
+			"Logical operations need bool type, not '{0}'('{1}') '{2}'('{3}')".format(
+				symb1Found[2],symb1Found[0],symb2Found[2], symb2Found[0]))	
+		if op == 'AND':
+			if symb1Found[2] == 'true' and symb2Found[2] == 'true':
+				self.setTypeValue(var[0],varIndex, 'bool', 'true')
+			else:
+				self.setTypeValue(var[0],varIndex, 'bool', 'false')	
+		elif op == 'OR':
+			if symb1Found[2] == 'true' or symb2Found[2] == 'true':
+				self.setTypeValue(var[0],varIndex, 'bool', 'true')
+			else:
+				self.setTypeValue(var[0],varIndex, 'bool', 'false')	
+		elif op == 'NOT':
+			if symb1Found[2] == 'true':
+				self.setTypeValue(var[0],varIndex, 'bool', 'false')
+			else:
+				self.setTypeValue(var[0],varIndex, 'bool', 'true')
+	
+	#JUMPIFEQ and JUMPIFNEQ implementation, returns true or false depends on condition 
+	def condJumps(self, op, symb1, symb2):
+		symb1Index, symb1Found = self.foundVar(symb1, True)
+		symb2Index, symb2Found = self.foundVar(symb2, True)	
+		if symb1Found[0] != symb2Found[0]:
+			if symb1Found[0] == 'nil' or symb2Found[0] == 'nil':
+				pass
+			else:
+				raise ib.WrongArgTypes(
+				"different types for relational instructions, '{0}'('{1}') '{2}'('{3}')".format(
+					symb1Found[2],symb1Found[0],symb2Found[2], symb2Found[0]))	
+		if symb1Found[2] == 'nil' or symb2Found[2] == 'nil':
+			if symb1Found[2] == symb2Found[2]:
+				if op == 'JUMPIFEQ':
+					return True
+				else:
+					return False
+			else:
+				if op == 'JUMPIFEQ':
+					return False
+				else:
+					return True
+		else:
+			if symb1Found[2] == symb2Found[2]:
+				if op == 'JUMPIFEQ':
+					return True
+				else:
+					return False
+			else:
+				if op == 'JUMPIFEQ':
+					return False
+				else:
+					return True
+
+	#adds data from symb to dataStack
 	def pushs(self, symb):
 		symbIndex, symbFound = self.foundVar(symb, True)
 		appendSymb = [symbFound[0], symbFound[2]]
 		self.dataStack.append(appendSymb)
 
+	#pops the top of the dataStack to variable var
 	def pops(self, var):
 		if self.dataStack == []:
 			raise ib.MissingValue("instruction POPS cannot be executed: data stack is empty")
@@ -172,10 +273,16 @@ class Dependencies:
 		popSymb = self.dataStack.pop(-1)
 		self.setTypeValue(var[0], varIndex, popSymb[0], popSymb[1])
 
-	def read(self, var, typeValue):
+	#reads input data from stdin via input() or via file 
+	#from sys.arg --input and saves the value to the var
+	def read(self, var, typeValue, inputFile, inputBool):
 		varIndex, varFound = self.foundVar(var, False)
 		try:
-			readValue = input()
+			if inputBool == True:
+				readValue = open(inputFile, "r")
+				readValue = readValue.read()
+			else: 
+				readValue = input()
 			try:
 				if typeValue == 'int':
 					self.setTypeValue(var[0],varIndex, 'int', int(readValue))
@@ -191,6 +298,7 @@ class Dependencies:
 		except EOFError:
 			self.setTypeValue(var[0],varIndex, 'nil', 'nil')
 
+	#prints value from symb to STDOUT 
 	def write(self, symb):
 		symbIndex, symbFound = self.foundVar(symb, True)
 		if symbFound[0] == 'nil':
@@ -205,6 +313,7 @@ class Dependencies:
 		elif symbFound[0] == 'string':
 			print(symbFound[2],end='')
 
+	#concatenation of symb1 and symb2, the result is saved to var. must be string type
 	def concat(self, var, symb1, symb2):
 		varIndex, varFound = self.foundVar(var, False)
 		symb1Index, symb1Found = self.foundVar(symb1, True)
@@ -239,7 +348,6 @@ class Dependencies:
 		varIndex, varFound = self.foundVar(var, False)
 		symb1Index, symb1Found = self.foundVar(symb1, True)
 		symb2Index, symb2Found = self.foundVar(symb2, True)
-		print(varFound[2],symb1Found[2], symb2Found[2])
 		if varFound[0] == 'string' and symb1Found[0] == 'int' and symb2Found[0] == 'string':
 			try:
 				result = varFound[2][:symb1Found[2]] + symb2Found[2][0] + varFound[2][symb1Found[2]+1:]
@@ -254,7 +362,6 @@ class Dependencies:
 	def instrType(self, var, symb):
 		varIndex, varFound = self.foundVar(var, False)
 		symbIndex, symbFound = self.foundVar(symb, True)
-
 		if symbFound[0] == '':
 			self.setTypeValue(var[0], varIndex, 'string', '')
 		elif symbFound[0] == 'nil':

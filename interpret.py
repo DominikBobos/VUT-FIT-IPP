@@ -24,7 +24,7 @@ parser.add_argument("--insts", action="store_true")
 parser.add_argument("--vars", action="store_true")
 
 arguments = parser.parse_args()
-
+inputBool = True
 if arguments.help:
 	if len(sys.argv) != 2:
 		sys.stderr.write("ERROR: '--help' need to be used standalone.\n") 
@@ -47,6 +47,7 @@ else:
 if not arguments.source:
 	arguments.source = sys.stdin
 if not arguments.input:
+	inputBool = False
 	arguments.input = sys.stdin
 
 if (arguments.insts or arguments.vars) and not arguments.stats:
@@ -90,25 +91,43 @@ class XMLparser:
 		checkType = ["int", "bool", "string", "label", "var", "type", "nil"]
 		for instr in source:
 			if (instr.tag != "instruction"):
-				raise elemTree.ParseError("can only contain 'instruction' subelements not: '%s'" % instr.tag)
+				raise ippcode_bank.ParseError("can only contain 'instruction' subelements not: '%s'" % instr.tag)
 			if (instr.get('order') == None or instr.get('opcode') == None):
-				raise elemTree.ParseError("instruction needs 'order' and 'opcode'")
+				raise ippcode_bank.ParseError("instruction needs 'order' and 'opcode'")
 			instruction = []
 			instruction.append(instr.get('opcode'))
 			checkInt = 0
+			arg1 = []
+			arg2 = []
+			arg3 = []
 			for deepchild in instr:
 				checkInt += 1
 				if (deepchild.tag[:3] != "arg"):
-					raise elemTree.ParseError("wrong arguments in XML: '%s'" % deepchild.tag)
-				if (deepchild.tag[3:] not in checkArgCount or (checkInt != int(deepchild.tag[3:]))):
-					raise elemTree.ParseError("wrong arguments count in instruction: '%s'" % deepchild.tag[3:])
+					raise ippcode_bank.ParseError("wrong arguments in XML: '%s'" % deepchild.tag)
+				if (deepchild.tag[3:] not in checkArgCount):
+					raise ippcode_bank.ParseError("wrong arguments in instruction: '{0}'".format(instr.get('opcode')))
 				if (deepchild.get('type') == None):
-					raise elemTree.ParseError("argument needs to have 'type' defined")
+					raise ippcode_bank.ParseError("argument needs to have 'type' defined")
 				if (deepchild.get('type') not in checkType):
-					raise elemTree.ParseError("undefined type: '%s'" % deepchild.get('type'))
-				args = [deepchild.get('type'), deepchild.text]
-				instruction.append(args)
-				# print (deepchild.get('type'), deepchild.text.split('@',1))	#first occurence
+					raise ippcode_bank.ParseError("undefined type: '%s'" % deepchild.get('type'))
+				if int(deepchild.tag[3:]) == 1:
+					arg1 = [deepchild.get('type'), deepchild.text]
+				elif int(deepchild.tag[3:]) == 2:
+					arg2 = [deepchild.get('type'), deepchild.text]
+				elif int(deepchild.tag[3:]) == 3:
+					arg3 = [deepchild.get('type'), deepchild.text]
+			checkArg = 0
+			if arg1 != []:
+				checkArg = 1
+				instruction.append(arg1)
+			if arg2 != []:
+				checkArg = 2
+				instruction.append(arg2)
+			if arg3 != []:
+				checkArg = 3
+				instruction.append(arg3)
+			if checkArg != checkInt:
+				raise ippcode_bank.ParseError("wrong arguments count in instruction: '{0}'".format(instr.get('opcode')))
 			instrList.append(instruction)
 
 		orderList = []
@@ -118,7 +137,7 @@ class XMLparser:
 					raise elemTree.ParseError("at least 2 same order types: '%s' exists many times" % source[i].get('order'))
 				orderList.append(int(source[i].get('order')))
 			except ValueError:
-				raise elemTree.ParseError("wrong 'order' type: '%s'" % source[i].get('order'))
+				raise ippcode_bank.ParseError("wrong 'order' type: '%s'" % source[i].get('order'))
 	
 		orderList = sorted(enumerate(orderList), key=lambda x: x[1])
 		return orderList, instrList
@@ -129,6 +148,7 @@ try:
 	orderList, instrList= XMLparser.checkBody(xmlRoot)		#check the rest of XML
 	program = ippcode_bank.Interpret()
 	program.checkInstr(orderList, instrList) 
+	program.interpret(arguments.input, inputBool)
 
 except elemTree.ParseError as wrongxml:
 	sys.stderr.write("ERROR: wrong XML format-> %s!\n" % str(wrongxml))

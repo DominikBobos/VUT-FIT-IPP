@@ -61,7 +61,6 @@ class Interpret:
 			raise ParseError("wrong number of arguments '{0}' needs '{1}' not '{2}' args".format(instr, neededCount, countGiven))
 
 	def checkInstr(self, order, xmlInstr):
-
 		for i in range(0,len(xmlInstr)):
 			# ind = order[i][0] gives the index of instruction in xmlInstr in right order
 			ind = order[i][0]
@@ -230,8 +229,8 @@ class Interpret:
 		# 		for found in item[1]:
 		# 			if "GF@space" in found:
 		# 				print(found[1])
-		self.interpret()
-		print(self.run.GF)
+		# self.interpret()
+		# print(self.run.GF)
 
 	def checkVar(self, arg):
 		if arg[0] != 'var' :
@@ -287,6 +286,10 @@ class Interpret:
 			raise ParseError("label '%s' is invalid" % arg[1])
 		if ind != -1:	#if == -1 , that means instructions CALL JUMP etc
 			if arg[1] in self.labels:
+				#case when was already defined but JUMP-like instructions went before that definitions
+				# if ind == self.labelIndex[self.labels.index(arg[1])]:
+				# 	pass
+				# else:
 				raise SemanticsError("Redefinition of label '%s'" % arg[1])	
 			else:			#this means instruction LABEL
 				self.labels.append(arg[1])
@@ -304,11 +307,11 @@ class Interpret:
 			raise SemanticsError("could not go to label '%s', it is not defined" % label)
 		else: 
 			if call != -1:
-				self.calls.append(call + 1)
+				self.calls.append(call)
 			move = self.labelIndex[self.labels.index(label)]
 			return move
 
-	def interpret(self):
+	def interpret(self, inputFile, inputBool):
 		instrCount = 0
 		current = 0
 		while current < len(self.instructions):
@@ -326,6 +329,7 @@ class Interpret:
 				self.run.defVar(self.instructions[current][1][0][1].split('@',1))
 			elif self.instructions[current][0].upper() == "CALL":
 				current = self.goToLabel(self.instructions[current][1][0][1], current)
+				instrCount += 1
 			elif self.instructions[current][0].upper() == "RETURN":
 				if self.calls == []:
 					raise MissingValue("empty CALL stack")
@@ -354,34 +358,28 @@ class Interpret:
 			elif self.instructions[current][0].upper() == "DIV":
 				pass
 			elif self.instructions[current][0].upper() == "LT":
-				pass
-				pass
-				pass
-				pass
+				self.run.conditions("LT",self.instructions[current][1][0][1].split('@',1),
+										self.instructions[current][1][1],
+										self.instructions[current][1][2])
 			elif self.instructions[current][0].upper() == "GT":
-				pass
-				pass
-				pass
-				pass
+				self.run.conditions("GT",self.instructions[current][1][0][1].split('@',1),
+										self.instructions[current][1][1],
+										self.instructions[current][1][2])
 			elif self.instructions[current][0].upper() == "EQ":
-				pass
-				pass
-				pass
-				pass
+				self.run.conditions("EQ",self.instructions[current][1][0][1].split('@',1),
+										self.instructions[current][1][1],
+										self.instructions[current][1][2])
 			elif self.instructions[current][0].upper() == "AND":
-				pass
-				pass
-				pass
-				pass
+				self.run.logical("AND",self.instructions[current][1][0][1].split('@',1),
+										self.instructions[current][1][1],
+										self.instructions[current][1][2])
 			elif self.instructions[current][0].upper() == "OR":
-				pass
-				pass
-				pass
-				pass
+				self.run.logical("OR",self.instructions[current][1][0][1].split('@',1),
+										self.instructions[current][1][1],
+										self.instructions[current][1][2])
 			elif self.instructions[current][0].upper() == "NOT":
-				pass
-				pass
-				pass
+				self.run.logical("NOT",self.instructions[current][1][0][1].split('@',1),
+										self.instructions[current][1][1])
 			elif self.instructions[current][0].upper() == "INT2CHAR":
 				pass
 				pass
@@ -393,7 +391,7 @@ class Interpret:
 				pass
 			elif self.instructions[current][0].upper() == "READ":
 				self.run.read(self.instructions[current][1][0][1].split('@',1),
-							self.instructions[current][1][1][1])
+							self.instructions[current][1][1][1], inputFile, inputBool)
 			elif self.instructions[current][0].upper() == "WRITE":
 				self.run.write(self.instructions[current][1][0])
 			elif self.instructions[current][0].upper() == "CONCAT":
@@ -418,16 +416,19 @@ class Interpret:
 				pass #did it earlier
 			elif self.instructions[current][0].upper() == "JUMP":
 				current = self.goToLabel(self.instructions[current][1][0][1], -1)
+				instrCount += 1
 			elif self.instructions[current][0].upper() == "JUMPIFEQ":
-				pass
-				pass
-				pass
-				pass
+				retBool = self.run.condJumps("JUMPIFEQ", self.instructions[current][1][1],
+								self.instructions[current][1][2])
+				if retBool == True:
+					current = self.goToLabel(self.instructions[current][1][0][1], -1)
+					instrCount += 1
 			elif self.instructions[current][0].upper() == "JUMPIFNEQ":
-				pass
-				pass
-				pass
-				pass
+				retBool = self.run.condJumps("JUMPIFNEQ", self.instructions[current][1][1],
+								self.instructions[current][1][2])
+				if retBool == True:
+					current = self.goToLabel(self.instructions[current][1][0][1], -1)
+					instrCount += 1
 			elif self.instructions[current][0].upper() == "EXIT":
 				self.run.instrExit(self.instructions[current][1][0])
 			elif self.instructions[current][0].upper() == "DPRINT":
