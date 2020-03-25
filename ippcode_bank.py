@@ -3,7 +3,7 @@ import xml.etree.ElementTree as elemTree
 import ippcode_dependencies
 import sys
 
-TYPE = ['int', 'bool', 'string']	#tuto nil nie je
+TYPE = ['int', 'bool', 'string', 'float']	#nil is not here 
 
 FRAME = ['LF', 'TF', 'GF']
 
@@ -17,7 +17,7 @@ INSTRUCTIONS =[ "MOVE",
 				"MUL", "IDIV", "DIV", 
 				"LT", "GT", "EQ", 
 				"AND", "OR", "NOT", 
-				"INT2CHAR", "STRI2INT", 
+				"INT2CHAR", "STRI2INT", "INT2FLOAT", "FLOAT2INT", 
 				"READ", "WRITE", 
 				"CONCAT", "STRLEN", 
 				"GETCHAR", "SETCHAR", 
@@ -29,37 +29,29 @@ INSTRUCTIONS =[ "MOVE",
 				"BREAK" ]
 
 
-class ParseError(Exception):
-	pass
-class SemanticsError(Exception):
-	pass
-class WrongArgTypes(Exception):
-	pass
-class UndefinedVar(Exception):
-	pass
-class FrameError(Exception):
-	pass
-class MissingValue(Exception):
-	pass
-class WrongValue(Exception):
-	pass
-class StringError(Exception):
-	pass
-
+'''
+Class for Intterpret which does all the job
+it is connected to ippcode_dependencies where are stored all the data and frames
+This is the brain of the whole interpret
+'''
 class Interpret:
 	def __init__(self):
-		self.instructions = []
-		self.labels = []
-		self.calls = []
-		self.labelIndex = []		#saves index of LABEL opcode in the correct order, so it saves time
-		self.run = ippcode_dependencies.Dependencies()
+		self.instructions = []	#stores all instructions from XMLfile in the right order
+		self.labels = []		#stores all unique labels
+		self.calls = []			#stack for CALL instruction
+		self.labelIndex = []	#saves index of LABEL opcode in the correct order, so it saves time
+		self.run = ippcode_dependencies.Dependencies()	
+		self.instrCount = 0		#count of all executed instructions
+		self.initVars = 0		#count of all initialized variables
 
+	#checks if the instrucion has the right count of needed arguments
 	def checkArgCount(self, instr, countGiven, neededCount):
 		if countGiven == neededCount:
 			pass
 		else:
 			raise ParseError("wrong number of arguments '{0}' needs '{1}' not '{2}' args".format(instr, neededCount, countGiven))
 
+	#checks all instructions and their arguments, if they contain the right value
 	def checkInstr(self, order, xmlInstr):
 		for i in range(0,len(xmlInstr)):
 			# ind = order[i][0] gives the index of instruction in xmlInstr in right order
@@ -149,6 +141,14 @@ class Interpret:
 					self.checkArgCount(xmlInstr[ind][0] ,len(xmlInstr[ind]) -1, 2)
 					self.checkVar(xmlInstr[ind][1])
 					self.checkSymb(xmlInstr[ind][2])
+				elif xmlInstr[ind][0].upper() == "FLOAT2INT":
+					self.checkArgCount(xmlInstr[ind][0] ,len(xmlInstr[ind]) -1, 2)
+					self.checkVar(xmlInstr[ind][1])
+					self.checkSymb(xmlInstr[ind][2])
+				elif xmlInstr[ind][0].upper() == "INT2FLOAT":
+					self.checkArgCount(xmlInstr[ind][0] ,len(xmlInstr[ind]) -1, 2)
+					self.checkVar(xmlInstr[ind][1])
+					self.checkSymb(xmlInstr[ind][2])
 				elif xmlInstr[ind][0].upper() == "STRI2INT":
 					self.checkArgCount(xmlInstr[ind][0] ,len(xmlInstr[ind]) -1, 3)
 					self.checkVar(xmlInstr[ind][1])
@@ -209,28 +209,10 @@ class Interpret:
 				elif xmlInstr[ind][0].upper() == "BREAK":
 					self.checkArgCount(xmlInstr[ind][0] ,len(xmlInstr[ind]) -1, 0)
 				temp = [xmlInstr[order[i][0]][0], xmlInstr[order[i][0]][1:]]
-				#vlozenie instrukcii s argumentami v poradi ako sa budu vykonavat
+				#appends instructions with arguments in the right order 
 				self.instructions.append(temp)
-				#self.instructions.append({"instruction": xmlInstr[order[i][0]][0], "args": xmlInstr[order[i][0]][1:]})
-
 			except IndexError:
 				raise ParseError("wrong arguments for instruction '%s'" % xmlInstr[ind][0])
-		
-		# princip vyhladavania napr labels, na jumpy etc
-		#najskor najde odpovedajucu instrukciu
-		# vpripade uspechu hlada danu vec v danej instrukcii 
-		# v pripade uspechu to tu vyprintuje
-		
-		# print(self.labelIndex, self.labels)				
-		#print(self.instructions[self.labelIndex[0]][1][0][1])
-		# print(self.instructions)
-		# for item in self.instructions:
-		# 	if "DEFVAR" in item:
-		# 		for found in item[1]:
-		# 			if "GF@space" in found:
-		# 				print(found[1])
-		# self.interpret()
-		# print(self.run.GF)
 
 	def checkVar(self, arg):
 		if arg[0] != 'var' :
@@ -255,8 +237,13 @@ class Interpret:
 		elif arg[0] == 'int':
 			try:
 				arg[1] = int(arg[1])
-			except (ValueError, TypeError):
+			except (ValueError, TypeError, OverflowError):
 				raise ParseError("invalid 'int' value: '%s'" % arg[1])
+		elif arg[0] == 'float':
+			try:
+				arg[1] = float.fromhex(arg[1])
+			except (ValueError, TypeError):
+				raise ParseError("invalid 'float' value: '%s'" % arg[1])
 		elif arg[0] == 'bool':
 			if arg[1] != 'true' and arg[1] != 'false':
 				raise ParseError("invalid 'bool' value: '%s'" % arg[1])
@@ -312,10 +299,9 @@ class Interpret:
 			return move
 
 	def interpret(self, inputFile, inputBool):
-		instrCount = 0
 		current = 0
 		while current < len(self.instructions):
-			instrCount += 1
+			self.instrCount += 1
 			if self.instructions[current][0].upper() == "MOVE":
 				self.run.move(self.instructions[current][1][0][1].split('@',1),
 							self.instructions[current][1][1])
@@ -329,7 +315,7 @@ class Interpret:
 				self.run.defVar(self.instructions[current][1][0][1].split('@',1))
 			elif self.instructions[current][0].upper() == "CALL":
 				current = self.goToLabel(self.instructions[current][1][0][1], current)
-				instrCount += 1
+				self.instrCount += 1
 			elif self.instructions[current][0].upper() == "RETURN":
 				if self.calls == []:
 					raise MissingValue("empty CALL stack")
@@ -356,7 +342,9 @@ class Interpret:
 										self.instructions[current][1][1],
 										self.instructions[current][1][2])
 			elif self.instructions[current][0].upper() == "DIV":
-				pass
+				self.run.calculate("DIV",self.instructions[current][1][0][1].split('@',1),
+										self.instructions[current][1][1],
+										self.instructions[current][1][2])
 			elif self.instructions[current][0].upper() == "LT":
 				self.run.conditions("LT",self.instructions[current][1][0][1].split('@',1),
 										self.instructions[current][1][1],
@@ -381,14 +369,18 @@ class Interpret:
 				self.run.logical("NOT",self.instructions[current][1][0][1].split('@',1),
 										self.instructions[current][1][1])
 			elif self.instructions[current][0].upper() == "INT2CHAR":
-				pass
-				pass
-				pass
+				self.run.int2Char(self.instructions[current][1][0][1].split('@',1),
+										self.instructions[current][1][1])
+			elif self.instructions[current][0].upper() == "FLOAT2INT":
+				self.run.float2Int(self.instructions[current][1][0][1].split('@',1),
+										self.instructions[current][1][1])
+			elif self.instructions[current][0].upper() == "INT2FLOAT":
+				self.run.int2Float(self.instructions[current][1][0][1].split('@',1),
+										self.instructions[current][1][1])
 			elif self.instructions[current][0].upper() == "STRI2INT":
-				pass
-				pass
-				pass
-				pass
+				self.run.stri2Int(self.instructions[current][1][0][1].split('@',1),
+										self.instructions[current][1][1],
+										self.instructions[current][1][2])
 			elif self.instructions[current][0].upper() == "READ":
 				self.run.read(self.instructions[current][1][0][1].split('@',1),
 							self.instructions[current][1][1][1], inputFile, inputBool)
@@ -416,19 +408,19 @@ class Interpret:
 				pass #did it earlier
 			elif self.instructions[current][0].upper() == "JUMP":
 				current = self.goToLabel(self.instructions[current][1][0][1], -1)
-				instrCount += 1
+				self.instrCount += 1
 			elif self.instructions[current][0].upper() == "JUMPIFEQ":
 				retBool = self.run.condJumps("JUMPIFEQ", self.instructions[current][1][1],
 								self.instructions[current][1][2])
 				if retBool == True:
 					current = self.goToLabel(self.instructions[current][1][0][1], -1)
-					instrCount += 1
+					self.instrCount += 1
 			elif self.instructions[current][0].upper() == "JUMPIFNEQ":
 				retBool = self.run.condJumps("JUMPIFNEQ", self.instructions[current][1][1],
 								self.instructions[current][1][2])
 				if retBool == True:
 					current = self.goToLabel(self.instructions[current][1][0][1], -1)
-					instrCount += 1
+					self.instrCount += 1
 			elif self.instructions[current][0].upper() == "EXIT":
 				self.run.instrExit(self.instructions[current][1][0])
 			elif self.instructions[current][0].upper() == "DPRINT":
@@ -448,9 +440,31 @@ Currently in data stack:	{2}
 Currently in Global Frame:	{3}
 Currently in Temporary Frame:	{4}
 Currently in Local Frame:	{5}
-""".format(current +1,instrCount -1, self.run.dataStack, self.run.GF, 
+""".format(current +1,self.instrCount -1, self.run.dataStack, self.run.GF, 
 	self.run.TF, self.run.LF,justToBeExact,len(self.instructions)))
+
 			current += 1
+		self.initVars = self.run.initializedVars
+
+'''
+Classes for managing error cases with the error message
+'''
+class ParseError(Exception):
+	pass
+class SemanticsError(Exception):
+	pass
+class WrongArgTypes(Exception):
+	pass
+class UndefinedVar(Exception):
+	pass
+class FrameError(Exception):
+	pass
+class MissingValue(Exception):
+	pass
+class WrongValue(Exception):
+	pass
+class StringError(Exception):
+	pass
 
 
 		

@@ -6,7 +6,7 @@ import ippcode_bank
 
 
 """
-	ARGS PARSING SECTION
+	INPUT SYS.ARGS PARSING SECTION
 """
 #to override built in error message from argparse
 class ArgumentParser(argumentParser.ArgumentParser):	
@@ -19,7 +19,7 @@ parser = ArgumentParser(add_help=False)
 parser.add_argument("--help", action="store_true")
 parser.add_argument("--source", metavar="FILE", type=str)
 parser.add_argument("--input",  metavar="FILE", type=str)
-parser.add_argument("--stats",action="store_true")			#metavar='FILE'	type=str
+parser.add_argument("--stats", metavar="FILE", type=str)
 parser.add_argument("--insts", action="store_true")
 parser.add_argument("--vars", action="store_true")
 
@@ -30,7 +30,15 @@ if arguments.help:
 		sys.stderr.write("ERROR: '--help' need to be used standalone.\n") 
 		exit(10)
 	else:
-		print("POMOC SO SKRIPTOM takze tu treba este dopisat stracky na pomoc")
+		print(
+"""#####PROGRAM interpret.py USAGE#####
+### This program loads XMLfile and executes instructions written in IPPcode20 ###
+* --source=FILE -> this argument stores XMLfile with IPPcode20 (when not stated, it loads from STDIN)
+* --input=FILE -> this argument stores data that IPPcode20 needs (when not stated, it loads from STDIN)
+* --stats=FILE -> this argument will contain statistics data about the executed XML file
+** --insts -> extension for --stats, stats about all executed instructions
+** --vars -> extension for --stats, stats about all initialized variables
+""")
 		exit(0)
 
 if not arguments.source and not arguments.input:
@@ -53,13 +61,6 @@ if not arguments.input:
 if (arguments.insts or arguments.vars) and not arguments.stats:
 	sys.stderr.write("ERORR: '--insts' or '--vars' used without '--stats'!\n")
 	exit(10)
-
-#TOTO SA BUDE MUSIET ASI PRIDAT NAKONIEC
-for x in range(1,len(sys.argv)):
-	if (sys.argv[x] == '--insts'):
-		print('--insts accepted')	#prints to file
-	elif (sys.argv[x] == '--vars'):
-		print('--vars accepted')	#prints to file
 """
 END OF ARGS PARSING SECTION
 """
@@ -88,7 +89,7 @@ class XMLparser:
 	def checkBody(source):
 		instrList = []
 		checkArgCount = ['1', '2', '3']
-		checkType = ["int", "bool", "string", "label", "var", "type", "nil"]
+		checkType = ["int", "bool", "string", "label", "var", "type", "nil", "float"]
 		for instr in source:
 			if (instr.tag != "instruction"):
 				raise ippcode_bank.ParseError("can only contain 'instruction' subelements not: '%s'" % instr.tag)
@@ -149,13 +150,31 @@ try:
 	program = ippcode_bank.Interpret()
 	program.checkInstr(orderList, instrList) 
 	program.interpret(arguments.input, inputBool)
+	if arguments.stats:
+		try:
+			finalStats = ""
+			for x in range(1,len(sys.argv)):
+				if (sys.argv[x] == '--insts'):
+					finalStats += str(program.instrCount)
+					finalStats += '\n'
+				elif (sys.argv[x] == '--vars'):
+					finalStats += str(program.initVars)
+					finalStats += '\n'
+
+			file = open(arguments.stats, "w")
+			file.seek(0)
+			file.write(finalStats)
+			file.truncate()
+		except IOError:
+			sys.stderr.write("ERROR: Could not open/create stats file!\n")
+			exit(12)
 
 except elemTree.ParseError as wrongxml:
 	sys.stderr.write("ERROR: wrong XML format-> %s!\n" % str(wrongxml))
 	exit(31)
 except FileNotFoundError:
-    sys.stderr.write("ERROR: Source file cannot be opened !\n")
-    exit(11)
+	sys.stderr.write("ERROR: Source file cannot be opened !\n")
+	exit(11)
 except ippcode_bank.ParseError as wrongsyntax:
 	sys.stderr.write("ERROR: syntax error-> %s!\n" % str(wrongsyntax))
 	exit(32)

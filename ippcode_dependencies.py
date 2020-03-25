@@ -8,6 +8,8 @@ class Dependencies:
 		self.LF = None
 		self.GF = []
 		self.dataStack = []
+		self.initializedVars = 0
+		self.readValue = []
 
 	def pushFrame(self):
 		if self.TF != None:
@@ -116,13 +118,15 @@ class Dependencies:
 	def move(self, var, symb):
 		varIndex, varFound = self.foundVar(var, False)
 		symbIndex, symbFound = self.foundVar(symb, True)
+		self.isInitialized(var)
 		self.setTypeValue(var[0],varIndex,symbFound[0], symbFound[2])
 
 	def calculate(self, op, var, symb1, symb2):
 		varIndex, varFound = self.foundVar(var, False)
 		symb1Index, symb1Found = self.foundVar(symb1, True)
 		symb2Index, symb2Found = self.foundVar(symb2, True)
-		if symb1Found[0] != 'int': 
+		self.isInitialized(var)
+		if symb1Found[0] != 'int' and symb1Found[0] != 'float': 
 			if symb1Found[1] == []:
 				varOrSymb = 'symb'
 			else:
@@ -130,7 +134,7 @@ class Dependencies:
 			raise ib.WrongArgTypes(
 				"operand ({3})'{0}' of type '{1}' is not of the correct type for operation '{2}'".format(
 				symb1Found[2], symb1Found[0], op, varOrSymb))
-		if symb2Found[0] != 'int':
+		if symb2Found[0] != 'int' and symb1Found[0] != 'float':
 			if symb2Found[1] == []:
 				varOrSymb = 'symb'
 			else:
@@ -140,14 +144,31 @@ class Dependencies:
 				symb2Found[2], symb2Found[0], op, varOrSymb))
 		
 		if op == 'ADD':
-			self.setTypeValue(var[0],varIndex, 'int', symb1Found[2] + symb2Found[2])
+			if isinstance(symb1Found[2] + symb2Found[2], int):
+				self.setTypeValue(var[0],varIndex, 'int', symb1Found[2] + symb2Found[2])
+			else:
+				self.setTypeValue(var[0],varIndex, 'float', symb1Found[2] + symb2Found[2])
 		elif op == 'SUB':
-			self.setTypeValue(var[0],varIndex, 'int', symb1Found[2] - symb2Found[2])
+			if isinstance(symb1Found[2] - symb2Found[2], int):
+				self.setTypeValue(var[0],varIndex, 'int', symb1Found[2] - symb2Found[2])
+			else:
+				self.setTypeValue(var[0],varIndex, 'float', symb1Found[2] - symb2Found[2])
 		elif op == 'MUL':
-			self.setTypeValue(var[0],varIndex, 'int', symb1Found[2] * symb2Found[2])
+			if isinstance(symb1Found[2] * symb2Found[2], int):
+				self.setTypeValue(var[0],varIndex, 'int', symb1Found[2] * symb2Found[2])
+			else:
+				self.setTypeValue(var[0],varIndex, 'float', symb1Found[2] * symb2Found[2])
 		elif op == 'IDIV':
 			try:
-				self.setTypeValue(var[0],varIndex, 'int', symb1Found[2] // symb2Found[2])
+				if isinstance(symb1Found[2] // symb2Found[2], int):
+					self.setTypeValue(var[0],varIndex, 'int', symb1Found[2] // symb2Found[2])
+				else:
+					self.setTypeValue(var[0],varIndex, 'float', symb1Found[2] // symb2Found[2])
+			except ZeroDivisionError:
+				raise ib.WrongValue("Zero division error")
+		elif op == 'DIV':
+			try:
+				self.setTypeValue(var[0],varIndex, 'float', symb1Found[2] / symb2Found[2])
 			except ZeroDivisionError:
 				raise ib.WrongValue("Zero division error")
 
@@ -155,7 +176,7 @@ class Dependencies:
 		varIndex, varFound = self.foundVar(var, False)
 		symb1Index, symb1Found = self.foundVar(symb1, True)
 		symb2Index, symb2Found = self.foundVar(symb2, True)	
-
+		self.isInitialized(var)
 		if symb1Found[0] != symb2Found[0] or (symb1Found[0] == 'nil' or symb2Found[0] == 'nil'):
 			if op == 'EQ' and (symb1Found[0] == 'nil' or symb2Found[0] == 'nil'):
 				pass
@@ -199,6 +220,7 @@ class Dependencies:
 		varIndex, varFound = self.foundVar(var, False)
 		symb1Index, symb1Found = self.foundVar(symb1, True)
 		symb2Found = ['bool', []]	#just because of 'NOT' uses only 2 args
+		self.isInitialized(var)
 		if op != 'NOT':
 			symb2Index, symb2Found = self.foundVar(symb2, True)	
 		if op == 'NOT' and symb1Found[0] != 'bool':
@@ -271,31 +293,44 @@ class Dependencies:
 			raise ib.MissingValue("instruction POPS cannot be executed: data stack is empty")
 		varIndex, varFound = self.foundVar(var, False)
 		popSymb = self.dataStack.pop(-1)
+		self.isInitialized(var)
 		self.setTypeValue(var[0], varIndex, popSymb[0], popSymb[1])
 
 	#reads input data from stdin via input() or via file 
 	#from sys.arg --input and saves the value to the var
 	def read(self, var, typeValue, inputFile, inputBool):
 		varIndex, varFound = self.foundVar(var, False)
+		self.isInitialized(var)
 		try:
 			if inputBool == True:
-				readValue = open(inputFile, "r")
-				readValue = readValue.read()
+				if self.readValue == []:
+					self.readValue = open(inputFile, "r")
+					self.readValue = self.readValue.read()
+					self.readValue = str(self.readValue).split('\n')	
+				
+				if self.readValue != []:
+					if isinstance(self.readValue, str):
+						readValueNow = self.readValue
+						self.readValue = ''
+					else: 
+						readValueNow = self.readValue.pop(0)
 			else: 
-				readValue = input()
+				readValueNow = input()
 			try:
 				if typeValue == 'int':
-					self.setTypeValue(var[0],varIndex, 'int', int(readValue))
+					self.setTypeValue(var[0],varIndex, 'int', int(readValueNow))
+				elif typeValue == 'float':
+					self.setTypeValue(var[0],varIndex, 'int', float.fromhex(readValueNow))
 				elif typeValue == 'string':
-					self.setTypeValue(var[0],varIndex, 'string', readValue)
+					self.setTypeValue(var[0],varIndex, 'string', readValueNow)
 				elif typeValue == 'bool':
-					if readValue.upper() == 'TRUE':
+					if readValueNow.upper() == 'TRUE':
 						self.setTypeValue(var[0],varIndex, 'bool', 'true')
 					else:
 						self.setTypeValue(var[0],varIndex, 'bool', 'false')
-			except ValueError:			#HERE BIG QUESTION ..mam tu dat nil@nil alebo chybu?!?!?!
-				self.setTypeValue(var[0],varIndex, 'nil', 'nil')
-		except EOFError:
+			except (ValueError,OverflowError, TypeError):	#HERE BIG QUESTION ..mam tu dat nil@nil alebo chybu?!?!?!
+				raise ib.WrongArgTypes("Wrong type for READ. You set you wanted '%s'" % typeValue)
+		except (EOFError, ValueError, IndexError):
 			self.setTypeValue(var[0],varIndex, 'nil', 'nil')
 
 	#prints value from symb to STDOUT 
@@ -310,6 +345,8 @@ class Dependencies:
 				print('false',end='')
 		elif symbFound[0] == 'int':
 			print(symbFound[2],end='')
+		elif symbFound[0] == 'float':
+			print(symbFound[2],end='')
 		elif symbFound[0] == 'string':
 			print(symbFound[2],end='')
 
@@ -318,6 +355,7 @@ class Dependencies:
 		varIndex, varFound = self.foundVar(var, False)
 		symb1Index, symb1Found = self.foundVar(symb1, True)
 		symb2Index, symb2Found = self.foundVar(symb2, True)
+		self.isInitialized(var)
 		if symb1Found[0] == 'string' and symb2Found[0] == 'string':
 			self.setTypeValue(var[0],varIndex, 'string', symb1[1] + symb2[1])
 		else:
@@ -326,6 +364,7 @@ class Dependencies:
 	def strlen(self,var,symb):
 		varIndex, varFound = self.foundVar(var, False)
 		symbIndex, symbFound = self.foundVar(symb, True)
+		self.isInitialized(var)
 		if symbFound[0] == 'string':
 			self.setTypeValue(var[0],varIndex, 'int', len(symbFound[2]))
 		else:
@@ -335,6 +374,7 @@ class Dependencies:
 		varIndex, varFound = self.foundVar(var, False)
 		symb1Index, symb1Found = self.foundVar(symb1, True)
 		symb2Index, symb2Found = self.foundVar(symb2, True)
+		self.isInitialized(var)
 		if symb1Found[0] == 'string' and symb2Found[0] == 'int':
 			try:
 				self.setTypeValue(var[0],varIndex, 'string', symb1Found[2][symb2Found[2]])
@@ -348,12 +388,14 @@ class Dependencies:
 		varIndex, varFound = self.foundVar(var, False)
 		symb1Index, symb1Found = self.foundVar(symb1, True)
 		symb2Index, symb2Found = self.foundVar(symb2, True)
+		self.isInitialized(var)
 		if varFound[0] == 'string' and symb1Found[0] == 'int' and symb2Found[0] == 'string':
 			try:
 				result = varFound[2][:symb1Found[2]] + symb2Found[2][0] + varFound[2][symb1Found[2]+1:]
 				self.setTypeValue(var[0], varIndex, 'string', result)
 			except IndexError:
-				raise ib.StringError("Index error, in function SETCHAR index '{0}' is out of range of '{1}'".format(
+				raise ib.StringError(
+					"Index error, in function SETCHAR index '{0}' is out of range of '{1}'".format(
 					symb1Found[2], varFound[2]))
 		else:
 			raise ib.WrongArgTypes(
@@ -362,6 +404,7 @@ class Dependencies:
 	def instrType(self, var, symb):
 		varIndex, varFound = self.foundVar(var, False)
 		symbIndex, symbFound = self.foundVar(symb, True)
+		self.isInitialized(var)
 		if symbFound[0] == '':
 			self.setTypeValue(var[0], varIndex, 'string', '')
 		elif symbFound[0] == 'nil':
@@ -372,6 +415,8 @@ class Dependencies:
 			self.setTypeValue(var[0], varIndex, 'string', 'int')
 		elif symbFound[0] == 'string':
 			self.setTypeValue(var[0], varIndex, 'string', 'string')
+		elif symbFound[0] == 'float':
+			self.setTypeValue(var[0], varIndex, 'string', 'float')
 
 	def instrExit(self, symb):
 		symbIndex, symbFound = self.foundVar(symb, True)
@@ -384,6 +429,68 @@ class Dependencies:
 	def dprint(self, symb):
 		symbIndex, symbFound = self.foundVar(symb, True)
 		sys.stderr.write("%s" % symbFound[2])
+
+	def int2Char(self, var, symb):
+		varIndex, varFound = self.foundVar(var, False)
+		symbIndex, symbFound = self.foundVar(symb, True)
+		self.isInitialized(var)
+		if symbFound[0] != 'int':
+			raise ib.WrongArgTypes(
+				"INT2CHAR needs variable of type int, not '%s'" % symbFound[0])
+		try:
+			self.setTypeValue(var[0], varIndex, 'string', chr(symbFound[2]))
+		except (UnicodeEncodeError, ValueError, OverflowError):
+			raise ib.StringError(
+				"UnicodeEncodeError. Could not encode string in INT2CHAR, '%s' value is invalid" % symbFound[2])
+
+	def stri2Int(self, var, symb1, symb2):
+		varIndex, varFound = self.foundVar(var, False)
+		symb1Index, symb1Found = self.foundVar(symb1, True)
+		symb2Index, symb2Found = self.foundVar(symb2, True)
+		self.isInitialized(var)
+		if symb1Found[0] != 'string':
+			raise ib.WrongArgTypes(
+				"STRI2INT needs symbol 1 of type 'string', not '%s'" % symbFound[0])
+		if symb2Found[0] != 'int':
+			raise ib.WrongArgTypes(
+				"STRI2INT needs symbol 2 of type int, not '%s'" % symbFound[0])
+		try:
+			self.setTypeValue(var[0], varIndex, 'int', ord(symb1Found[2][symb2Found[2]]))
+		except (TypeError, IndexError, ValueError):
+			raise ib.StringError(
+				"Could not decode string in STRI2INT, '{1}' index is outside the given string '{0}'".format(
+					symb1Found[2], symb2Found[2]))
+
+	def int2Float(self, var, symb):
+		varIndex, varFound = self.foundVar(var, False)
+		symbIndex, symbFound = self.foundVar(symb, True)
+		self.isInitialized(var)
+		if symbFound[0] != 'int':
+			raise ib.WrongArgTypes(
+				"INT2FLOAT needs variable of type int, not '%s'" % symbFound[0])
+		try:
+			self.setTypeValue(var[0], varIndex, 'float', float(symbFound[2]))
+		except (ValueError, TypeError):
+			raise ib.WrongValue("Could not convert Int to Float")
+
+	def float2Int(self, var, symb):
+		varIndex, varFound = self.foundVar(var, False)
+		symbIndex, symbFound = self.foundVar(symb, True)
+		self.isInitialized(var)
+		if symbFound[0] != 'float':
+			raise ib.WrongArgTypes(
+				"FLOAT2INT needs variable of type float, not '%s'" % symbFound[0])
+		try:
+			self.setTypeValue(var[0], varIndex, 'int', int(symbFound[2]))
+		except (ValueError, TypeError):
+			raise ib.WrongValue("Could not convert Float to Int")
+
+	# checks if variable var is being initialized, for statistics of number of 
+	def isInitialized(self, var):
+		varIndex, varFound = self.foundVar(var, False)
+		if varFound[0] == '':	#this means it was just declared
+			self.initializedVars += 1
+
 
 
 

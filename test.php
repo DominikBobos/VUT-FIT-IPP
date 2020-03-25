@@ -80,7 +80,7 @@ function HTMLgen($filename, $exp_rc, $test_rc, $result, $test_count)
 
 function TestFiles($source)
 {
-	global $int_file, $parse_file, $jexamxml_file, $parse_only_flag, $parseArg, $interpArg;
+	global $int_file, $parse_file, $jexamxml_file, $parse_only_flag, $parseArg, $interpArg, $int_only_flag;
 	global $success, $failure, $test_count;
 
 	if(substr($source, -2) == ".." || substr($source, -1) == ".")
@@ -92,12 +92,17 @@ function TestFiles($source)
 		$filename = substr($source, 0,-4);
 		$ref_output = str_replace(".src",".out",$source);
 		$ref_rc = str_replace(".src",".rc",$source);
-		//$ref_in = str_replace(".src",".in",$source);	//zatial nema vyznam ked nemam interpret.py
+		$ref_in = str_replace(".src",".in",$source);	//zatial nema vyznam ked nemam interpret.py
 
 		if(!file_exists($ref_output))
 		{
-			fwrite(STDERR, $test_count +1 . ".test - Referenčný output sa nenachádza v priečinku! Test sa nevykoná.\n");
-			return false;
+			$test_file = fopen($ref_output, "w");
+			if ($test_file == false)
+			{
+				fwrite(STDERR, "Výstupný súbor nejde otvoriť alebo neexistuje! a nejde otvoriť\n");
+				ErrorExit(11);
+			}
+			fclose($test_file);
 		}
 		
 		if(isXmlStructureValid($source) and $parse_only_flag == true)	//zistuje ci .src je xml subor
@@ -110,10 +115,21 @@ function TestFiles($source)
 			$test_file = fopen($ref_rc, "w");
 			if ($test_file == false)
 			{
-				fwrite(STDERR, "Výstupný súbor nejde otvoriť alebo neexituje!\n");
+				fwrite(STDERR, "Výstupný súbor nejde otvoriť alebo neexistuje! a nejde otvoriť\n");
 				ErrorExit(11);
 			}
 			fwrite($test_file,'0');
+			fclose($test_file);
+		}
+
+		if(!file_exists($ref_in))
+		{
+			$test_file = fopen($ref_in, "w");
+			if ($test_file == false)
+			{
+				fwrite(STDERR, "Výstupný súbor nejde otvoriť alebo neexistuje! a nejde otvoriť\n");
+				ErrorExit(11);
+			}
 			fclose($test_file);
 		}
 
@@ -129,7 +145,19 @@ function TestFiles($source)
 		fclose($test_file);
 
 		$test_count++;
-		exec("php7.4 ".$parse_file ." <$source >temp_output", $result,$rc_out);
+		if($parse_only_flag == true)
+		{
+			exec("php7.4 ".$parse_file ." <$source >temp_output", $result,$rc_out);
+		}
+		elseif ($int_only_flag == true)
+		{
+			exec("python3.8 ".$int_file ." --source=$source <$ref_in >temp_output", $result,$rc_out);
+		}
+		else
+		{
+			exec("php7.4 ".$parse_file ." <$source >temp_output", $result,$rc_out);
+			exec("python3.8 ".$int_file ." --source=temp_output <$ref_in >temp_output", $result,$rc_out);
+		}
 		if($rc_out != $exp_rc)
 		{
 			HTMLgen($filename,$exp_rc,$rc_out,false,$test_count);		//rc sa nerovnali
@@ -137,18 +165,35 @@ function TestFiles($source)
 		}
 		else 
 		{
-
-			exec("java -jar ".$jexamxml_file." temp_output ".$ref_output, $result, $diff_ret); 
-			if($diff_ret != 0 and $rc_out != $exp_rc)
-		 	{
-		 		$failure++;
-				HTMLgen($filename,$exp_rc,$rc_out,false,$test_count);
+			if($parse_only_flag == true)
+			{
+				exec("java -jar ".$jexamxml_file." temp_output ".$ref_output, $result, $diff_ret); 
+				if($diff_ret != 0 and $rc_out != $exp_rc)
+			 	{
+			 		$failure++;
+					HTMLgen($filename,$exp_rc,$rc_out,false,$test_count);
+				}
+				else
+				{
+					$success++;
+					HTMLgen($filename,$exp_rc,$rc_out,true,$test_count);
+				}
 			}
 			else
 			{
-				$success++;
-				HTMLgen($filename,$exp_rc,$rc_out,true,$test_count);
+				exec("diff -q temp_output ".$ref_output, $result, $diff_ret);
+				if($diff_ret != 0 and $rc_out != $exp_rc)
+			 	{
+			 		$failure++;
+					HTMLgen($filename,$exp_rc,$rc_out,false,$test_count);
+				}
+				else
+				{
+					$success++;
+					HTMLgen($filename,$exp_rc,$rc_out,true,$test_count);
+				}
 			}
+			
 		}
 		unlink("temp_output");
 	} 
