@@ -249,7 +249,7 @@ class Interpret:
 				raise ParseError("invalid 'bool' value: '%s'" % arg[1])
 		elif arg[0] == 'string':
 			if arg[1] == None:
-				arg[1] == ''
+				arg[1] = ''
 			elif ('#' in arg[1] or re.search(r"\s", arg[1])):
 				raise ParseError("invalid 'string' value: '%s'" % arg[1])
 			else:
@@ -306,7 +306,7 @@ class Interpret:
 				self.run.move(self.instructions[current][1][0][1].split('@',1),
 							self.instructions[current][1][1])
 			elif self.instructions[current][0].upper() == "CREATEFRAME":
-				self.run.tempFrame = []
+				self.run.TF = []
 			elif self.instructions[current][0].upper() == "PUSHFRAME":
 				self.run.pushFrame()
 			elif self.instructions[current][0].upper() == "POPFRAME":

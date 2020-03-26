@@ -110,6 +110,11 @@ function TestFiles($source)
 			return false;
 		}
 
+		// if(!isXmlStructureValid($source) and $int_only_flag == true)	//zistuje ci .src je xml subor
+		// {
+		// 	return false;
+		// }
+
 		if(!file_exists($ref_rc))
 		{
 			$test_file = fopen($ref_rc, "w");
@@ -151,12 +156,12 @@ function TestFiles($source)
 		}
 		elseif ($int_only_flag == true)
 		{
-			exec("python3.8 ".$int_file ." --source=$source <$ref_in >temp_output", $result,$rc_out);
+			exec("python3.8 ".$int_file ." --source=$source <$ref_in >temp_output2", $result,$rc_out);
 		}
 		else
 		{
 			exec("php7.4 ".$parse_file ." <$source >temp_output", $result,$rc_out);
-			exec("python3.8 ".$int_file ." --source=temp_output <$ref_in >temp_output", $result,$rc_out);
+			exec("python3.8 ".$int_file ." --source=temp_output <$ref_in >temp_output2", $result,$rc_out);
 		}
 		if($rc_out != $exp_rc)
 		{
@@ -181,7 +186,7 @@ function TestFiles($source)
 			}
 			else
 			{
-				exec("diff -q temp_output ".$ref_output, $result, $diff_ret);
+				exec("diff -q temp_output2 ".$ref_output, $result, $diff_ret);
 				if($diff_ret != 0 and $rc_out != $exp_rc)
 			 	{
 			 		$failure++;
@@ -196,6 +201,7 @@ function TestFiles($source)
 			
 		}
 		unlink("temp_output");
+		unlink("temp_output2");
 	} 
 	return True;	
 }
