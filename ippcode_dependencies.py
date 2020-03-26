@@ -417,7 +417,7 @@ class Dependencies:
 		symb1Index, symb1Found = self.foundVar(symb1, True)
 		symb2Index, symb2Found = self.foundVar(symb2, True)
 		self.isInitialized(var)
-		if symb1Found[0] == '' or symb2Found[0] == '':
+		if varFound[0] == '' or symb1Found[0] == '' or symb2Found[0] == '':
 			raise ib.MissingValue("unitialized variable")
 		if varFound[0] == 'string' and symb1Found[0] == 'int' and symb2Found[0] == 'string':
 			try:
@@ -425,6 +425,7 @@ class Dependencies:
 					raise ib.StringError(
 					"Index error, in function SETCHAR index '{0}' is out of range of '{1}'".format(
 					symb1Found[2], varFound[2]))
+				varFound[2][symb1Found[2]] #just to raise exception
 				result = varFound[2][:symb1Found[2]] + symb2Found[2][0] + varFound[2][symb1Found[2]+1:]
 				self.setTypeValue(var[0], varIndex, 'string', result)
 			except (IndexError, TypeError):
