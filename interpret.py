@@ -172,6 +172,9 @@ try:
 except elemTree.ParseError as wrongxml:
 	sys.stderr.write("ERROR: wrong XML format-> %s!\n" % str(wrongxml))
 	exit(31)
+except TypeError as wrongxml:
+	sys.stderr.write("ERROR: wrong XML format-> %s!\n" % str(wrongxml))
+	exit(31)
 except FileNotFoundError:
 	sys.stderr.write("ERROR: Source file cannot be opened !\n")
 	exit(11)
