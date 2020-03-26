@@ -181,6 +181,7 @@ function TestFiles($source)
 					$success++;
 					HTMLgen($filename,$exp_rc,$rc_out,true,$test_count);
 				}
+				unlink("temp_output");
 			}
 			else
 			{
@@ -195,11 +196,10 @@ function TestFiles($source)
 					$success++;
 					HTMLgen($filename,$exp_rc,$rc_out,true,$test_count);
 				}
-			}
-			
+				unlink("temp_output");
+				unlink("temp_output2");
+			}	
 		}
-		if($int_only_flag == false) {unlink("temp_output");}
-		if($parse_only_flag == false) {unlink("temp_output2");}
 	} 
 	return True;	
 }

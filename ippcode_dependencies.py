@@ -445,7 +445,7 @@ class Dependencies:
 		elif symbFound[0] == 'int':
 			print(symbFound[2],end='')
 		elif symbFound[0] == 'float':
-			print(symbFound[2],end='')
+			print(float.hex(symbFound[2]),end='')
 		elif symbFound[0] == 'string':
 			print(symbFound[2],end='')
 
