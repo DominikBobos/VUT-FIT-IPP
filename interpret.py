@@ -122,6 +122,9 @@ class XMLparser:
 					raise ippcode_bank.ParseError("argument needs to have 'type' defined")
 				if (deepchild.get('type') not in checkType):
 					raise ippcode_bank.ParseError("undefined type: '%s'" % deepchild.get('type'))
+				if (deepchild.tail and deepchild.tail.strip() != "") or\
+					(instr.text and instr.text.strip() != ""):
+					raise elemTree.ParseError("not well-formed XML")
 				if int(deepchild.tag[3:]) == 1:
 					arg1 = [deepchild.get('type'), deepchild.text]
 				elif int(deepchild.tag[3:]) == 2:
