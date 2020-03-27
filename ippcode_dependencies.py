@@ -599,6 +599,7 @@ class Dependencies:
 
 
 	# ends program with the exit code saved in symb
+	#returns the exit value
 	def instrExit(self, symb):
 		symbIndex, symbFound = self.foundVar(symb, True)
 		if symbFound[0] == '':
@@ -608,7 +609,7 @@ class Dependencies:
 		elif (symbFound[2] < 0 or symbFound[2] > 49):
 			raise ib.WrongValue("value for EXIT should be int in range 0-49, not '%s'" % symbFound[2])
 		else:
-			sys.exit(symbFound[2])
+			return symbFound[2]
 
 
 	#prints symb to STDERR

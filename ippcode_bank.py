@@ -484,7 +484,9 @@ class Interpret:
 					current = self.goToLabel(self.instructions[current][1][0][1], -1)
 					self.instrCount += 1
 			elif self.instructions[current][0].upper() == "EXIT":
-				self.run.instrExit(self.instructions[current][1][0])
+				exitVal = self.run.instrExit(self.instructions[current][1][0])
+				self.initVars = self.run.initializedVars	#to save stats
+				return exitVal
 			elif self.instructions[current][0].upper() == "DPRINT":
 				self.run.dprint(self.instructions[current][1][0])
 			elif self.instructions[current][0].upper() == "BREAK":
@@ -548,6 +550,7 @@ Currently in Local Frame:	{5}
 					self.instrCount += 1
 			current += 1
 		self.initVars = self.run.initializedVars
+		return True
 
 '''
 Classes for managing error cases with the error message

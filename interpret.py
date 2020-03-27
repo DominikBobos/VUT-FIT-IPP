@@ -29,7 +29,7 @@ inputBool = True
 if arguments.help:
 	if len(sys.argv) != 2:
 		sys.stderr.write("ERROR: '--help' need to be used standalone.\n") 
-		exit(10)
+		sys.exit(10)
 	else:
 		print(
 """#####PROGRAM interpret.py USAGE#####
@@ -39,18 +39,18 @@ if arguments.help:
 * --stats=FILE -> this argument will contain statistics data about the executed XML file
 ** --insts -> extension for --stats, stats about all executed instructions
 ** --vars -> extension for --stats, stats about all initialized variables""")
-		exit(0)
+		sys.exit(0)
 
 if not arguments.source and not arguments.input:
 	sys.stderr.write("ERROR: use at least one argument '--source' or '--input'!\n")
-	exit(10)
+	sys.exit(10)
 else:
 	if arguments.source and not os.path.isfile(arguments.source):
 		sys.stderr.write("ERROR: Cannot open input file set by --source.\n")
-		exit(11)
+		sys.exit(11)
 	if arguments.input and not os.path.isfile(arguments.input):
 		sys.stderr.write("ERROR: Cannot open input file set by --input.\n")
-		exit(11)
+		sys.exit(11)
 
 if not arguments.source:
 	arguments.source = sys.stdin
@@ -60,7 +60,7 @@ if not arguments.input:
 
 if (arguments.insts or arguments.vars) and not arguments.stats:
 	sys.stderr.write("ERORR: '--insts' or '--vars' used without '--stats'!\n")
-	exit(10)
+	sys.exit(10)
 """
 	END OF ARGS PARSING SECTION
 """
@@ -166,8 +166,9 @@ try:
 	orderList, instrList= XMLparser.checkBody(xmlRoot)	#check the rest of XML
 	program = ippcode_bank.Interpret()
 	program.checkInstr(orderList, instrList) 			#checks if the instruction has correct order
-	program.interpret(arguments.input, inputBool)		#runs the whole interpret
-	
+	#runs the whole interpret, returns True, if everything fine or some value if instruction EXIT appears
+	#this is for situation when we get STATI args but if we ended up earlier, the stats would not be printed
+	exitVal = program.interpret(arguments.input, inputBool)		
 	#STATI extension
 	#prints wanted information to file given to sys.arg --stats
 	if arguments.stats:
@@ -186,40 +187,43 @@ try:
 			file.truncate()
 		except IOError:
 			sys.stderr.write("ERROR: Could not open/create stats file!\n")
-			exit(12)
+			sys.exit(12)
+
+	if exitVal != True:	#this means that EXIT was called
+		sys.exit(exitVal)
 
 
 #Error messages handling with the corresponding error code 
 except elemTree.ParseError as wrongxml:
 	sys.stderr.write("ERROR: wrong XML format-> %s!\n" % str(wrongxml))
-	exit(31)
+	sys.exit(31)
 except TypeError as wrongxml:
 	sys.stderr.write("ERROR: wrong XML format-> %s!\n" % str(wrongxml))
-	exit(31)
+	sys.exit(31)
 except FileNotFoundError:
 	sys.stderr.write("ERROR: Source file cannot be opened !\n")
-	exit(11)
+	sys.exit(11)
 except ippcode_bank.ParseError as wrongsyntax:
 	sys.stderr.write("ERROR: syntax error-> %s!\n" % str(wrongsyntax))
-	exit(32)
+	sys.exit(32)
 except ippcode_bank.SemanticsError as wrongsemantics:
 	sys.stderr.write("ERROR: semantics error-> %s!\n" % str(wrongsemantics))
-	exit(52)
+	sys.exit(52)
 except ippcode_bank.WrongArgTypes as wrongargs:
 	sys.stderr.write("ERROR: wrong operands type-> %s!\n" % str(wrongargs))
-	exit(53)
+	sys.exit(53)
 except ippcode_bank.UndefinedVar as wrongvar:
 	sys.stderr.write("ERROR: variable error-> %s!\n" % str(wrongvar))
-	exit(54)
+	sys.exit(54)
 except ippcode_bank.FrameError as frameError:
 	sys.stderr.write("ERROR: %s !\n" % str(frameError))
-	exit(55)
+	sys.exit(55)
 except ippcode_bank.MissingValue as missingValue:
 	sys.stderr.write("ERROR: missing value-> %s!\n" % str(missingValue))
-	exit(56)
+	sys.exit(56)
 except ippcode_bank.WrongValue as wrongvalue:
 	sys.stderr.write("ERROR: wrong value-> %s!\n" % str(wrongvalue))
-	exit(57)
+	sys.exit(57)
 except ippcode_bank.StringError as wrongstring:
 	sys.stderr.write("ERROR: error with string-> %s!\n" % str(wrongstring))
-	exit(58)
+	sys.exit(58)
