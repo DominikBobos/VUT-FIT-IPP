@@ -1,16 +1,22 @@
 import sys
 import ippcode_bank as ib
 
+
+"""
+	Class containing all the data needed for the executing the instructions
+	It contains all the needed functions for all the instructions
+"""
 class Dependencies:
 	def __init__(self):
-		self.stackFrame = []
-		self.TF = None
-		self.LF = None
-		self.GF = []
-		self.dataStack = []
-		self.initializedVars = 0
-		self.readValue = []
+		self.stackFrame = []	
+		self.TF = None			#temporary frame
+		self.LF = None			#local frame
+		self.GF = []			#global frame
+		self.dataStack = []		
+		self.initializedVars = 0	#STATI extension, stores count of initialized vars
+		self.readValue = []			#variable for handling READ instruction
 
+	#pushes TF to LF
 	def pushFrame(self):
 		if self.TF != None:
 			self.stackFrame.append(self.TF)
@@ -19,27 +25,33 @@ class Dependencies:
 		else:
 			raise ib.FrameError("Temporary frame 'TF' does not exist")
 
+	#pops frame from stackFrame to temporary frame
 	def popFrame(self):
 		if len(self.stackFrame) != 0:
 			self.TF = self.stackFrame.pop(-1)
 			try:
-				# len(self.stackFrame) != 0:
 				self.LF = self.stackFrame[-1]
 			except IndexError:
 				self.LF = None
 		else:
 			raise ib.FrameError("Could not execute POPFRAME, frame stack is already empty")
 
+	#gets variable in 'arg' from the GF
+	#returns index where it is in corresponding stack 
+	#and the variable -> a list with ['type', 'name', 'value']
 	def getFromGF(self,var):	#returns index if found + the found var and type, if not found returns -1
 		if self.GF == []:
 			return -1, []
 		index = 0
 		for name in self.GF:
 			if var == name[1]:
-				return index, name
+				return index, name	
 			index += 1
-		return -1, []		#dont forget to protect error cases
+		return -1, []		
 
+	#gets variable in 'arg' from the LF
+	#returns index where it is in corresponding stack 
+	#and the variable -> a list with ['type', 'name', 'value']
 	def getFromLF(self,var):
 		if self.LF == None:
 			raise ib.FrameError("Local frame 'LF' does not exist")
@@ -48,8 +60,11 @@ class Dependencies:
 			if name[1] == var:
 				return index, name
 			index += 1
-		return -1, []		#dont forget to protect error cases
+		return -1, []		
 
+	#gets variable in 'arg' from the TF
+	#returns index where it is in corresponding stack 
+	#and the variable -> a list with ['type', 'name', 'value']
 	def getFromTF(self,var):
 		if self.TF == None:
 			raise ib.FrameError("Temporary frame 'TF' does not exist")
@@ -58,15 +73,17 @@ class Dependencies:
 			if name[1] == var:
 				return index, name
 			index += 1
-		return -1, []		#dont forget to protect error cases
+		return -1, []	
 
+	# declares variable in wanted frame
+	#var[0] is the frame, var[1] is the variable name
 	def defVar(self, var):
 		if var[0] == "GF":
 			found, foundvar = self.getFromGF(var[1])
-			if found != -1:
+			if found != -1: 	
 				raise ib.SemanticsError("redefinition of var '{0}' in '{1}'".format(var[1], var[0]))  
 			else:
-				typeAndVar = ["", var[1], "noValue"]
+				typeAndVar = ["", var[1], "noValue"]	#['type', 'name', 'value']
 				self.GF.append(typeAndVar)
 		elif var[0] == "TF":
 			found, foundvar = self.getFromTF(var[1])
@@ -83,6 +100,8 @@ class Dependencies:
 				typeAndVar = ["", var[1], "noValue"]
 				self.LF.append(typeAndVar)
 
+	#finds the var[1] in the frame var[0]
+	# if its symbol, the symbBool is True
 	def foundVar(self, var, symbBool):
 		found = -1
 		foundVar = []
@@ -107,6 +126,11 @@ class Dependencies:
 				raise ib.UndefinedVar("var '{0}' in '{1}' is not defined".format(var[1], var[0]))
 		return found, foundVar
 
+	#sets the type and value to variable
+	#frame = wanted frame
+	#index = location where the var is in the frame stack
+	#typeVar = the wanted type for var
+	#value = the wanted value for variable
 	def setTypeValue(self, frame, index, typeVar, value):
 		if frame == "GF":
 			self.GF[index][0] = typeVar
@@ -118,6 +142,7 @@ class Dependencies:
 			self.LF[index][0] = typeVar
 			self.LF[index][2] = value
 
+	#sets value and type from symb to the variable var
 	def move(self, var, symb):
 		varIndex, varFound = self.foundVar(var, False)
 		symbIndex, symbFound = self.foundVar(symb, True)
@@ -135,6 +160,7 @@ class Dependencies:
 		self.dataStack.append(appendSymb)
 
 	#pops the top of the dataStack to variable var
+	#if stack == True it just pops to popSymb and returns it
 	def pops(self, var = None, stack = False):
 		if self.dataStack == []:
 			raise ib.MissingValue("instruction POPS cannot be executed: data stack is empty")
@@ -142,12 +168,18 @@ class Dependencies:
 			popSymb = self.dataStack.pop(-1)
 			return popSymb
 		varIndex, varFound = self.foundVar(var, False)
-		popSymb = self.dataStack.pop(-1)
+		popSymb = self.dataStack.pop(-1) 
 		if popSymb[0] == '':
 			raise ib.MissingValue("unitialized variable")
 		self.isInitialized(var)
 		self.setTypeValue(var[0], varIndex, popSymb[0], popSymb[1])
 
+	#executes the Arithmetic operations
+	#op = wanted Arithmetic operations
+	#var = where the result will be saved 
+	#symb1 = operator 1
+	#symb2 = operator 2
+	#if stack == True, the result will be pushed to dataStack and not saved to var
 	def calculate(self, op, var, symb1, symb2, stack = False):
 		if stack == False:
 			varIndex, varFound = self.foundVar(var, False)
@@ -175,8 +207,7 @@ class Dependencies:
 				varOrSymb = 'var: ' + symb2Found[1]
 			raise ib.WrongArgTypes(
 			"operand ({3})'{0}' of type '{1}' is not of the correct type for operation '{2}'".format(
-				symb2Found[2], symb2Found[0], op, varOrSymb))
-		
+				symb2Found[2], symb2Found[0], op, varOrSymb))		
 		if op == 'ADD' or op == 'ADDS':
 			if isinstance(symb1Found[2] + symb2Found[2], int):
 				if stack == False:
@@ -233,7 +264,12 @@ class Dependencies:
 			except ZeroDivisionError:
 				raise ib.WrongValue("Zero division error")
 
-
+	#executes the relational operations
+	#op = wanted relational operations
+	#var = where the bool result will be saved 
+	#symb1 = operator 1
+	#symb2 = operator 2
+	#if stack == True, the result will be pushed to dataStack and not saved to var
 	def conditions(self, op, var, symb1, symb2, stack = False):
 		if stack == False:
 			varIndex, varFound = self.foundVar(var, False)
@@ -263,7 +299,6 @@ class Dependencies:
 				symb2Found[2] = True
 			else:
 				symb2Found[2] = False
-		
 		result = ''	#final result which will be in the var, or pushed to dataStack
 		if op == 'LT':
 			if symb1Found[2] < symb2Found[2]:
@@ -286,7 +321,6 @@ class Dependencies:
 					result = True
 				else:
 					result = False
-		
 		if result == True:
 			if stack == False:
 				self.setTypeValue(var[0],varIndex, 'bool', 'true')
@@ -298,9 +332,12 @@ class Dependencies:
 			else:
 				self.pushs(['bool', 'false'])
 
-
-	
-
+	#executes the logical operations
+	#op = wanted logical operations
+	#var = where the bool result will be saved 
+	#symb1 = operator 1
+	#symb2 = operator 2
+	#if stack == True, the result will be pushed to dataStack and not saved to var
 	def logical(self, op, var, symb1, symb2 = [], stack = False):	
 		if stack == False:
 			varIndex, varFound = self.foundVar(var, False)
@@ -323,7 +360,6 @@ class Dependencies:
 			raise ib.WrongArgTypes(
 			"Logical operations need bool type, not '{0}'('{1}') '{2}'('{3}')".format(
 				symb1Found[2],symb1Found[0],symb2Found[2], symb2Found[0]))	
-
 		result = ''	#final result which will be in the var, or pushed to dataStack
 		if op == 'AND':
 			if symb1Found[2] == 'true' and symb2Found[2] == 'true':
@@ -340,7 +376,6 @@ class Dependencies:
 				result = False
 			else:
 				result = True
-
 		if result == True:
 			if stack == False:
 				self.setTypeValue(var[0],varIndex, 'bool', 'true')
@@ -352,9 +387,8 @@ class Dependencies:
 			else:
 				self.pushs(['bool', 'false'])
 
-
-	
-	#JUMPIFEQ and JUMPIFNEQ implementation, returns true or false depends on condition 
+	#JUMPIFEQ and JUMPIFNEQ implementation, 
+	#returns true or false depends on symb1 and symb2
 	def condJumps(self, op, symb1, symb2, stack = False):
 		if stack == True:
 			symb2 = self.pops(None,True)
@@ -399,20 +433,21 @@ class Dependencies:
 		varIndex, varFound = self.foundVar(var, False)
 		self.isInitialized(var)
 		try:
-			if inputBool == True:
+			if inputBool == True:	#we read from the actual file
 				if self.readValue == []:
 					self.readValue = open(inputFile, "r")
 					self.readValue = self.readValue.read()
-					self.readValue = str(self.readValue).split('\n')	
-				
+					#split so every READ gets what it was meant to get
+					self.readValue = str(self.readValue).split('\n')
 				if self.readValue != []:
 					if isinstance(self.readValue, str):
 						readValueNow = self.readValue
 						self.readValue = ''
 					else: 
+						#gradually pops the line from the line
 						readValueNow = self.readValue.pop(0)
 			else: 
-				readValueNow = input()
+				readValueNow = input()	#get the value from STDIN
 			try:
 				if typeValue == 'int':
 					self.setTypeValue(var[0],varIndex, 'int', int(readValueNow))
@@ -462,6 +497,7 @@ class Dependencies:
 		else:
 			raise ib.WrongArgTypes("CONCAT needs two string arguments.")
 
+	###
 	def strlen(self,var,symb):
 		varIndex, varFound = self.foundVar(var, False)
 		symbIndex, symbFound = self.foundVar(symb, True)

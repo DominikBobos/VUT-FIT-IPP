@@ -5,15 +5,16 @@ import os
 import ippcode_bank 
 
 
-"""
-	INPUT SYS.ARGS PARSING SECTION
-"""
-#to override built in error message from argparse
+
+#Class just to override built in error message from argparse
 class ArgumentParser(argumentParser.ArgumentParser):	
 	def error(self, message):
 		sys.stderr.write("ERROR: Used wrong arguments! Use '--help' for program manual.\n")
 		sys.exit(10)
 
+"""
+	INPUT SYS.ARGS PARSING SECTION
+"""
 # adding possible options 
 parser = ArgumentParser(add_help=False)
 parser.add_argument("--help", action="store_true")
@@ -37,8 +38,7 @@ if arguments.help:
 * --input=FILE -> this argument stores data that IPPcode20 needs (when not stated, it loads from STDIN)
 * --stats=FILE -> this argument will contain statistics data about the executed XML file
 ** --insts -> extension for --stats, stats about all executed instructions
-** --vars -> extension for --stats, stats about all initialized variables
-""")
+** --vars -> extension for --stats, stats about all initialized variables""")
 		exit(0)
 
 if not arguments.source and not arguments.input:
@@ -62,34 +62,44 @@ if (arguments.insts or arguments.vars) and not arguments.stats:
 	sys.stderr.write("ERORR: '--insts' or '--vars' used without '--stats'!\n")
 	exit(10)
 """
-END OF ARGS PARSING SECTION
+	END OF ARGS PARSING SECTION
 """
 
-#kontrolovat spravnost XML
 
+"""
+	Class for parsing XMLfile with IPPcode20 language
+	Checks well-formness
+	Checks syntax and lexical errors 
+"""
 class XMLparser:
+	"""Gets XMLelements_tree using xml.etree.ElementTree library
+	source is XMLfile, it checks the IPPcode20 header if false it returns 31"""
 	def checkXML(source):
 		tree = elemTree.parse(source)
 		# Valid root element
 		root = tree.getroot()
+		#checking if XML has the right IPPcode20 header
 		if root.tag != "program":
-			raise elemTree.ParseError("root element must be 'program' not: '%s'" % root.tag)
+			raise ippcode_bank.ParseError("root element must be 'program' not: '%s'" % root.tag)
 
 		if "language" not in root.attrib:
-			raise elemTree.ParseError("missing attribute 'language'")
+			raise ippcode_bank.ParseError("missing attribute 'language'")
 
 		for attrib, value in root.attrib.items():
 			if attrib == "language":
 				if value.upper() != "IPPCODE20":
-					raise elemTree.ParseError("language must be 'IPPcode20'")
+					raise ippcode_bank.ParseError("language must be 'IPPcode20'")
 			elif attrib != "name" and attrib != "description":
-				raise elemTree.ParseError("program element can only contain language, name or description attributes")	
+				raise ("program element can only contain language, name or description attributes")	
 		return root			
-
+	"""Source is the XMLtree with all the attributes
+	function checks syntax and lexical errors 
+	exception raises when error
+	returns the correct order and instructions list"""
 	def checkBody(source):
-		instrList = []
-		checkArgCount = ['1', '2', '3']
-		checkType = ["int", "bool", "string", "label", "var", "type", "nil", "float"]
+		instrList = []							#holds the correct order of all used instructions
+		checkArgCount = ['1', '2', '3']			#the only possible attribute args count	
+		checkType = ["int", "bool", "string", "label", "var", "type", "nil", "float"]	#available types
 		for instr in source:
 			if (instr.tag != "instruction"):
 				raise ippcode_bank.ParseError("can only contain 'instruction' subelements not: '%s'" % instr.tag)
@@ -101,6 +111,7 @@ class XMLparser:
 			arg1 = []
 			arg2 = []
 			arg3 = []
+			#checks if there are correctly numbered arguments 
 			for deepchild in instr:
 				checkInt += 1
 				if (deepchild.tag[:3] != "arg"):
@@ -117,6 +128,7 @@ class XMLparser:
 					arg2 = [deepchild.get('type'), deepchild.text]
 				elif int(deepchild.tag[3:]) == 3:
 					arg3 = [deepchild.get('type'), deepchild.text]
+			#gives a correct order to arguments
 			checkArg = 0
 			if arg1 != []:
 				checkArg = 1
@@ -129,27 +141,33 @@ class XMLparser:
 				instruction.append(arg3)
 			if checkArg != checkInt:
 				raise ippcode_bank.ParseError("wrong arguments count in instruction: '{0}'".format(instr.get('opcode')))
-			instrList.append(instruction)
+			instrList.append(instruction)	#appends to instrList a list with ['instruction', [its args]]
 
+		#sorts the order and the corresponding instructions's index thanks to the element 'order'
 		orderList = []
 		for i in range(0,len(source)):
 			try:
 				if int(source[i].get('order')) in orderList:
-					raise elemTree.ParseError("at least 2 same order types: '%s' exists many times" % source[i].get('order'))
+					raise ippcode_bank.ParseError("at least 2 same order types: '%s' exists many times" % source[i].get('order'))
 				orderList.append(int(source[i].get('order')))
 			except ValueError:
 				raise ippcode_bank.ParseError("wrong 'order' type: '%s'" % source[i].get('order'))
-	
+		# orderList is a list where the item is another list where [0] 
+		# is the actual index of instruction
+		# in the input XML, so it will execute in the right order 
 		orderList = sorted(enumerate(orderList), key=lambda x: x[1])
 		return orderList, instrList
 
 
 try:
-	xmlRoot = XMLparser.checkXML(arguments.source)	#checkXMLhead
-	orderList, instrList= XMLparser.checkBody(xmlRoot)		#check the rest of XML
+	xmlRoot = XMLparser.checkXML(arguments.source)		#checkXMLhead
+	orderList, instrList= XMLparser.checkBody(xmlRoot)	#check the rest of XML
 	program = ippcode_bank.Interpret()
-	program.checkInstr(orderList, instrList) 
-	program.interpret(arguments.input, inputBool)
+	program.checkInstr(orderList, instrList) 			#checks if the instruction has correct order
+	program.interpret(arguments.input, inputBool)		#runs the whole interpret
+	
+	#STATI extension
+	#prints wanted information to file given to sys.arg --stats
 	if arguments.stats:
 		try:
 			finalStats = ""
@@ -160,7 +178,6 @@ try:
 				elif (sys.argv[x] == '--vars'):
 					finalStats += str(program.initVars)
 					finalStats += '\n'
-
 			file = open(arguments.stats, "w")
 			file.seek(0)
 			file.write(finalStats)
@@ -169,6 +186,8 @@ try:
 			sys.stderr.write("ERROR: Could not open/create stats file!\n")
 			exit(12)
 
+
+#Error messages handling with the corresponding error code 
 except elemTree.ParseError as wrongxml:
 	sys.stderr.write("ERROR: wrong XML format-> %s!\n" % str(wrongxml))
 	exit(31)

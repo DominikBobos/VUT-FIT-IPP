@@ -3,10 +3,13 @@ import xml.etree.ElementTree as elemTree
 import ippcode_dependencies
 import sys
 
+#possible types for instruction READ -> type ∈ {int, float, string, float}
 TYPE = ['int', 'bool', 'string', 'float']	#nil is not here 
 
+#List of possible frames
 FRAME = ['LF', 'TF', 'GF']
 
+#List of all supported instructions
 INSTRUCTIONS =[ "MOVE", 
 				"CREATEFRAME", "PUSHFRAME", "POPFRAME", 
 				"DEFVAR", 
@@ -14,10 +17,10 @@ INSTRUCTIONS =[ "MOVE",
 				"RETURN", 
 				"PUSHS", "POPS", 
 				"ADD", "SUB", 
-				"MUL", "IDIV", "DIV", 
+				"MUL", "IDIV", "DIV", 								#FLOAT extension
 				"LT", "GT", "EQ", 
 				"AND", "OR", "NOT", 
-				"INT2CHAR", "STRI2INT", "INT2FLOAT", "FLOAT2INT", 
+				"INT2CHAR", "STRI2INT", "INT2FLOAT", "FLOAT2INT", 	#FLOAT extension
 				"READ", "WRITE", 
 				"CONCAT", "STRLEN", 
 				"GETCHAR", "SETCHAR", 
@@ -27,16 +30,17 @@ INSTRUCTIONS =[ "MOVE",
 				"EXIT", 
 				"DPRINT", 
 				"BREAK",
-				"CLEARS",
-				"ADDS", "SUBS", "MULS", "IDIVS", "DIVS" 
-				"LTS", "GTS", "EQS", 
-				"ANDS", "ORS", "NOTS", 
-				"INT2CHARS", "STRI2INTS", "INT2FLOATS", "FLOAT2INTS",
-				"JUMPIFEQS", "JUMPIFNEQS" ]
+				"CLEARS",											#STATI extension
+				"ADDS", "SUBS", "MULS", "IDIVS", "DIVS" 			#STATI extension
+				"LTS", "GTS", "EQS", 								#STATI extension
+				"ANDS", "ORS", "NOTS", 								#STATI extension
+				"INT2CHARS", "STRI2INTS", "INT2FLOATS", "FLOAT2INTS",#STATI,FLOAT extension
+				"JUMPIFEQS", "JUMPIFNEQS" ]							#STATI extension
 
 
 '''
-Class for Intterpret which does all the job
+Class for Interpret which does all the job
+Checks if semantics is correct 
 it is connected to ippcode_dependencies where are stored all the data and frames
 This is the brain of the whole interpret
 '''
@@ -51,6 +55,8 @@ class Interpret:
 		self.initVars = 0		#count of all initialized variables
 
 	#checks if the instrucion has the right count of needed arguments
+	#countGiven is the arg count from the input XML
+	#neededCount is the expected arg count for instruction instr
 	def checkArgCount(self, instr, countGiven, neededCount):
 		if countGiven == neededCount:
 			pass
@@ -58,6 +64,8 @@ class Interpret:
 			raise ParseError("wrong number of arguments '{0}' needs '{1}' not '{2}' args".format(instr, neededCount, countGiven))
 
 	#checks all instructions and their arguments, if they contain the right value
+	#order is the instruction order in which will the instructions be executed
+	#xmlInstr is the list of instructions and its arguments
 	def checkInstr(self, order, xmlInstr):
 		for i in range(0,len(xmlInstr)):
 			# ind = order[i][0] gives the index of instruction in xmlInstr in right order
@@ -65,6 +73,7 @@ class Interpret:
 			if xmlInstr[ind][0].upper() not in INSTRUCTIONS:
 				raise ParseError("'%s' instruction does not exist" % xmlInstr[ind][0])
 			try:
+					#case insensitive instructions
 				if xmlInstr[ind][0].upper() == "MOVE":
 					self.checkArgCount(xmlInstr[ind][0], len(xmlInstr[ind]) - 1, 2)
 					self.checkVar(xmlInstr[ind][1])
@@ -258,6 +267,8 @@ class Interpret:
 			except IndexError:
 				raise ParseError("wrong arguments for instruction '%s'" % xmlInstr[ind][0])
 
+	#checks the correct values for variables
+	# that means {FRAME}@{acceptable values for var}
 	def checkVar(self, arg):
 		if arg[0] != 'var' :
 			raise ParseError("variable should have been 'var' not '%s'" % arg[0])
@@ -272,6 +283,8 @@ class Interpret:
 		if not re.match(r"^[a-zá-žA-ZÁ-Ž_\-$&%*?!][\w\-$&%*?!]*$", arg[1]):
 			raise ParseError("variable '%s' is invalid" % arg[1])
 
+	#checks the correct values for var	
+	# that means [{TYPE}, {acceptable values for symbol}]
 	def checkSymb(self, arg):
 		if arg[0] == 'var':
 			self.checkVar(arg)
@@ -298,8 +311,9 @@ class Interpret:
 				raise ParseError("invalid 'string' value: '%s'" % arg[1])
 			else:
 				for i in range(0,len(arg[1])):
-					if i == len(arg[1]):
-						break;
+					if i == len(arg[1]):	
+						break;	#when there was escape sequence, it is shorter then before
+					# managing escape sequences
 					if arg[1][i] == '\\':
 						try:
 							escape = arg[1][i+1] + arg[1][i+2] + arg[1][i+3]
@@ -310,6 +324,10 @@ class Interpret:
 		else:
 			raise ParseError("invalid symbol: cannot be '%s'" % arg[0])
 
+	#checks validity and the correct vales of label in 'arg'
+	#if it is called by LABEL, it will append to labels, or raise exception
+	#if it is called by JUMP-like instructions it checks existence of the label in arg
+	#ind is the index where the label is located, if it's -1 its not important
 	def checkLabel(self, arg, ind):
 		if arg[0] != 'label':
 			raise ParseError("type label is needed, not '%s'" % arg[0])
@@ -317,15 +335,12 @@ class Interpret:
 			raise ParseError("label '%s' is invalid" % arg[1])
 		if ind != -1:	#if == -1 , that means instructions CALL JUMP etc
 			if arg[1] in self.labels:
-				#case when was already defined but JUMP-like instructions went before that definitions
-				# if ind == self.labelIndex[self.labels.index(arg[1])]:
-				# 	pass
-				# else:
 				raise SemanticsError("Redefinition of label '%s'" % arg[1])	
 			else:			#this means instruction LABEL
 				self.labels.append(arg[1])
-				self.labelIndex.append(ind)		#saves index in the whole code, to faster execution
+				self.labelIndex.append(ind)	#saves index in the whole code, to faster execution
 		
+	#checks type in 'arg' for instruction READ
 	def checkType(self, arg):
 		if arg[0] != 'type':
 			raise ParseError("arg 'type' is needed, not '%s'" % arg[0])
@@ -338,12 +353,15 @@ class Interpret:
 			raise SemanticsError("could not go to label '%s', it is not defined" % label)
 		else: 
 			if call != -1:
-				self.calls.append(call)
-			move = self.labelIndex[self.labels.index(label)]
+				self.calls.append(call) #appends position (index) where it should return
+			move = self.labelIndex[self.labels.index(label)]#return the label position in code  
 			return move
 
+	# executes the instructions
+	#inputFile is the input file for instruction READ
+	#inputBool is True if input file is a real file, False if it is from STDIN
 	def interpret(self, inputFile, inputBool):
-		current = 0
+		current = 0		#index of currently executed instruction
 		while current < len(self.instructions):
 			self.instrCount += 1
 			if self.instructions[current][0].upper() == "MOVE":
@@ -359,12 +377,12 @@ class Interpret:
 				self.run.defVar(self.instructions[current][1][0][1].split('@',1))
 			elif self.instructions[current][0].upper() == "CALL":
 				current = self.goToLabel(self.instructions[current][1][0][1], current)
-				self.instrCount += 1
+				self.instrCount += 1	# 'execution' of label
 			elif self.instructions[current][0].upper() == "RETURN":
 				if self.calls == []:
 					raise MissingValue("empty CALL stack")
-				else:
-					current = self.calls.pop(-1)
+				else:	#changes to position where it was called
+					current = self.calls.pop(-1)	
 			elif self.instructions[current][0].upper() == "PUSHS":
 				self.run.pushs(self.instructions[current][1][0])
 			elif self.instructions[current][0].upper() == "POPS":
@@ -452,17 +470,17 @@ class Interpret:
 				pass #did it earlier
 			elif self.instructions[current][0].upper() == "JUMP":
 				current = self.goToLabel(self.instructions[current][1][0][1], -1)
-				self.instrCount += 1
+				self.instrCount += 1	#the 'execution' of label
 			elif self.instructions[current][0].upper() == "JUMPIFEQ":
 				retBool = self.run.condJumps("JUMPIFEQ", self.instructions[current][1][1],
 								self.instructions[current][1][2])
-				if retBool == True:
+				if retBool == True:	#jumps to label
 					current = self.goToLabel(self.instructions[current][1][0][1], -1)
 					self.instrCount += 1
 			elif self.instructions[current][0].upper() == "JUMPIFNEQ":
 				retBool = self.run.condJumps("JUMPIFNEQ", self.instructions[current][1][1],
 								self.instructions[current][1][2])
-				if retBool == True:
+				if retBool == True:	#jumps to label
 					current = self.goToLabel(self.instructions[current][1][0][1], -1)
 					self.instrCount += 1
 			elif self.instructions[current][0].upper() == "EXIT":
@@ -470,7 +488,7 @@ class Interpret:
 			elif self.instructions[current][0].upper() == "DPRINT":
 				self.run.dprint(self.instructions[current][1][0])
 			elif self.instructions[current][0].upper() == "BREAK":
-				justToBeExact = 'th'
+				justToBeExact = 'th'	#variable just to be English correct
 				if current == 1:
 					justToBeExact = 'st'
 				elif current == 2:
@@ -487,7 +505,7 @@ Currently in Local Frame:	{5}
 """.format(current +1,self.instrCount -1, self.run.dataStack, self.run.GF, 
 	self.run.TF, self.run.LF,justToBeExact,len(self.instructions)))
 			elif xmlInstr[ind][0].upper() == "CLEARS":
-				self.run.dataStack = []
+				self.run.dataStack = []	#clears dataStack
 			elif xmlInstr[ind][0].upper() == "ADDS":
 				self.run.calculate("ADDS",None,None,None,True)
 			elif xmlInstr[ind][0].upper() == "SUBS":
