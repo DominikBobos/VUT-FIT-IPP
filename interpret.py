@@ -150,7 +150,9 @@ class XMLparser:
 				if int(source[i].get('order')) in orderList:
 					raise ippcode_bank.ParseError("at least 2 same order types: '%s' exists many times" % source[i].get('order'))
 				orderList.append(int(source[i].get('order')))
-			except ValueError:
+				if int(source[i].get('order')) < 0:	# negative index of order
+					raise ippcode_bank.ParseError("negative 'order' type: '%s'" % source[i].get('order'))
+			except (ValueError, TypeError):
 				raise ippcode_bank.ParseError("wrong 'order' type: '%s'" % source[i].get('order'))
 		# orderList is a list where the item is another list where [0] 
 		# is the actual index of instruction

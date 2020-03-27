@@ -2,6 +2,7 @@ import sys
 import ippcode_bank as ib
 
 
+
 """
 	Class containing all the data needed for the executing the instructions
 	It contains all the needed functions for all the instructions
@@ -16,6 +17,7 @@ class Dependencies:
 		self.initializedVars = 0	#STATI extension, stores count of initialized vars
 		self.readValue = []			#variable for handling READ instruction
 
+
 	#pushes TF to LF
 	def pushFrame(self):
 		if self.TF != None:
@@ -24,6 +26,7 @@ class Dependencies:
 			self.TF = None
 		else:
 			raise ib.FrameError("Temporary frame 'TF' does not exist")
+
 
 	#pops frame from stackFrame to temporary frame
 	def popFrame(self):
@@ -35,6 +38,7 @@ class Dependencies:
 				self.LF = None
 		else:
 			raise ib.FrameError("Could not execute POPFRAME, frame stack is already empty")
+
 
 	#gets variable in 'arg' from the GF
 	#returns index where it is in corresponding stack 
@@ -49,6 +53,7 @@ class Dependencies:
 			index += 1
 		return -1, []		
 
+
 	#gets variable in 'arg' from the LF
 	#returns index where it is in corresponding stack 
 	#and the variable -> a list with ['type', 'name', 'value']
@@ -62,6 +67,7 @@ class Dependencies:
 			index += 1
 		return -1, []		
 
+
 	#gets variable in 'arg' from the TF
 	#returns index where it is in corresponding stack 
 	#and the variable -> a list with ['type', 'name', 'value']
@@ -74,6 +80,7 @@ class Dependencies:
 				return index, name
 			index += 1
 		return -1, []	
+
 
 	# declares variable in wanted frame
 	#var[0] is the frame, var[1] is the variable name
@@ -99,6 +106,7 @@ class Dependencies:
 			else:
 				typeAndVar = ["", var[1], "noValue"]
 				self.LF.append(typeAndVar)
+
 
 	#finds the var[1] in the frame var[0]
 	# if its symbol, the symbBool is True
@@ -126,6 +134,7 @@ class Dependencies:
 				raise ib.UndefinedVar("var '{0}' in '{1}' is not defined".format(var[1], var[0]))
 		return found, foundVar
 
+
 	#sets the type and value to variable
 	#frame = wanted frame
 	#index = location where the var is in the frame stack
@@ -142,14 +151,16 @@ class Dependencies:
 			self.LF[index][0] = typeVar
 			self.LF[index][2] = value
 
+
 	#sets value and type from symb to the variable var
 	def move(self, var, symb):
 		varIndex, varFound = self.foundVar(var, False)
 		symbIndex, symbFound = self.foundVar(symb, True)
-		if symbFound[0] == '':
+		if symbFound[0] == '':	#this means that no type was previously specified
 			raise ib.MissingValue("unitialized variable")
 		self.isInitialized(var)
 		self.setTypeValue(var[0],varIndex,symbFound[0], symbFound[2])
+
 
 	#adds data from symb to dataStack
 	def pushs(self, symb):
@@ -158,6 +169,7 @@ class Dependencies:
 		if symbFound[0] == '':
 			raise ib.MissingValue("unitialized variable")
 		self.dataStack.append(appendSymb)
+
 
 	#pops the top of the dataStack to variable var
 	#if stack == True it just pops to popSymb and returns it
@@ -173,6 +185,7 @@ class Dependencies:
 			raise ib.MissingValue("unitialized variable")
 		self.isInitialized(var)
 		self.setTypeValue(var[0], varIndex, popSymb[0], popSymb[1])
+
 
 	#executes the Arithmetic operations
 	#op = wanted Arithmetic operations
@@ -264,6 +277,7 @@ class Dependencies:
 			except ZeroDivisionError:
 				raise ib.WrongValue("Zero division error")
 
+
 	#executes the relational operations
 	#op = wanted relational operations
 	#var = where the bool result will be saved 
@@ -332,6 +346,7 @@ class Dependencies:
 			else:
 				self.pushs(['bool', 'false'])
 
+
 	#executes the logical operations
 	#op = wanted logical operations
 	#var = where the bool result will be saved 
@@ -387,6 +402,7 @@ class Dependencies:
 			else:
 				self.pushs(['bool', 'false'])
 
+
 	#JUMPIFEQ and JUMPIFNEQ implementation, 
 	#returns true or false depends on symb1 and symb2
 	def condJumps(self, op, symb1, symb2, stack = False):
@@ -427,6 +443,7 @@ class Dependencies:
 				else:
 					return True
 
+
 	#reads input data from stdin via input() or via file 
 	#from sys.arg --input and saves the value to the var
 	def read(self, var, typeValue, inputFile, inputBool):
@@ -465,6 +482,7 @@ class Dependencies:
 		except (EOFError, ValueError, IndexError):
 			self.setTypeValue(var[0],varIndex, 'nil', 'nil')
 
+
 	#prints value from symb to STDOUT 
 	def write(self, symb):
 		symbIndex, symbFound = self.foundVar(symb, True)
@@ -484,6 +502,7 @@ class Dependencies:
 		elif symbFound[0] == 'string':
 			print(symbFound[2],end='')
 
+
 	#concatenation of symb1 and symb2, the result is saved to var. must be string type
 	def concat(self, var, symb1, symb2):
 		varIndex, varFound = self.foundVar(var, False)
@@ -497,7 +516,10 @@ class Dependencies:
 		else:
 			raise ib.WrongArgTypes("CONCAT needs two string arguments.")
 
-	###
+
+	#finds length of string and saves length to var
+	#var[0] is the wanted frame var[1] is the variable name
+	#symb is the string from which we want the length
 	def strlen(self,var,symb):
 		varIndex, varFound = self.foundVar(var, False)
 		symbIndex, symbFound = self.foundVar(symb, True)
@@ -509,6 +531,9 @@ class Dependencies:
 		else:
 			raise ib.WrongArgTypes("STRLEN needs string argument.")
 
+
+	#saves the character from string in symb1 on symb2 index and 
+	#saves it into var
 	def getchar(self, var, symb1, symb2):
 		varIndex, varFound = self.foundVar(var, False)
 		symb1Index, symb1Found = self.foundVar(symb1, True)
@@ -528,6 +553,8 @@ class Dependencies:
 		else:
 			raise ib.WrongArgTypes("GETCHAR needs first argument string, second arguments int.")
 
+
+	#replaces the character in symb2[0] to string in var on symb1 index  
 	def setchar(self, var, symb1, symb2):
 		varIndex, varFound = self.foundVar(var, False)
 		symb1Index, symb1Found = self.foundVar(symb1, True)
@@ -552,6 +579,7 @@ class Dependencies:
 			raise ib.WrongArgTypes(
 				"SETCHAR needs variable of type string, first symbol of type int, second symbol of type string")
 
+	#dynamically gets the the type of var
 	def instrType(self, var, symb):
 		varIndex, varFound = self.foundVar(var, False)
 		symbIndex, symbFound = self.foundVar(symb, True)
@@ -569,6 +597,8 @@ class Dependencies:
 		elif symbFound[0] == 'float':
 			self.setTypeValue(var[0], varIndex, 'string', 'float')
 
+
+	# ends program with the exit code saved in symb
 	def instrExit(self, symb):
 		symbIndex, symbFound = self.foundVar(symb, True)
 		if symbFound[0] == '':
@@ -580,12 +610,17 @@ class Dependencies:
 		else:
 			sys.exit(symbFound[2])
 
+
+	#prints symb to STDERR
 	def dprint(self, symb):
 		symbIndex, symbFound = self.foundVar(symb, True)
 		if symbFound[0] == '':
 			raise ib.MissingValue("unitialized variable")
 		sys.stderr.write("%s" % symbFound[2])
 
+
+	#convert int in symb to char and saves to var
+	#if stack == True the char is pushed to dataStack
 	def int2Char(self, var, symb, stack = False):
 		if stack == False:
 			varIndex, varFound = self.foundVar(var, False)
@@ -607,6 +642,9 @@ class Dependencies:
 			raise ib.StringError(
 				"UnicodeEncodeError. Could not encode string in INT2CHAR, '%s' value is invalid" % symbFound[2])
 
+
+	#convert character in string symb1 on index symb2 to int and saves to var
+	#if stack == True the int value is pushed to dataStack
 	def stri2Int(self, var, symb1, symb2, stack = False):
 		if stack == False:
 			varIndex, varFound = self.foundVar(var, False)
@@ -638,6 +676,9 @@ class Dependencies:
 				"Could not decode string in STRI2INT, '{1}' index is outside the given string '{0}'".format(
 					symb1Found[2], symb2Found[2]))
 
+
+	#convert int in symb to float and saves to var
+	#if stack == True the float value is pushed to dataStack
 	def int2Float(self, var, symb, stack = False):
 		if stack == False:
 			varIndex, varFound = self.foundVar(var, False)
@@ -658,6 +699,9 @@ class Dependencies:
 		except (ValueError, TypeError):
 			raise ib.WrongValue("Could not convert Int to Float")
 
+
+	#convert flaot in symb to int and saves to var
+	#if stack == True the int value is pushed to dataStack
 	def float2Int(self, var, symb, stack = False):
 		if stack == False:
 			varIndex, varFound = self.foundVar(var, False)
