@@ -31,7 +31,7 @@ INSTRUCTIONS =[ "MOVE",
 				"DPRINT", 
 				"BREAK",
 				"CLEARS",											#STATI extension
-				"ADDS", "SUBS", "MULS", "IDIVS", "DIVS" 			#STATI extension
+				"ADDS", "SUBS", "MULS", "IDIVS", "DIVS" 			#STATI,FLOAT extension
 				"LTS", "GTS", "EQS", 								#STATI extension
 				"ANDS", "ORS", "NOTS", 								#STATI extension
 				"INT2CHARS", "STRI2INTS", "INT2FLOATS", "FLOAT2INTS",#STATI,FLOAT extension
@@ -368,13 +368,13 @@ class Interpret:
 				self.run.move(self.instructions[current][1][0][1].split('@',1),
 							self.instructions[current][1][1])
 			elif self.instructions[current][0].upper() == "CREATEFRAME":
-				self.run.TF = []
+				self.run.TF = [] 	#creates empty TF 
 			elif self.instructions[current][0].upper() == "PUSHFRAME":
 				self.run.pushFrame()
 			elif self.instructions[current][0].upper() == "POPFRAME":
 				self.run.popFrame()
 			elif self.instructions[current][0].upper() == "DEFVAR":
-				self.run.defVar(self.instructions[current][1][0][1].split('@',1))
+				self.run.defVar(self.instructions[current][1][0][1].split('@',1), current)
 			elif self.instructions[current][0].upper() == "CALL":
 				current = self.goToLabel(self.instructions[current][1][0][1], current)
 				self.instrCount += 1	# 'execution' of label

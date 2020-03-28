@@ -10,12 +10,13 @@ import ippcode_bank as ib
 class Dependencies:
 	def __init__(self):
 		self.stackFrame = []	
-		self.TF = None			#temporary frame
-		self.LF = None			#local frame
-		self.GF = []			#global frame
+		self.TF = None				#temporary frame
+		self.LF = None				#local frame
+		self.GF = []				#global frame
 		self.dataStack = []		
 		self.initializedVars = 0	#STATI extension, stores count of initialized vars
 		self.readValue = []			#variable for handling READ instruction
+		self.defVarIndex = []		#to prevent errors in loops
 
 
 	#pushes TF to LF
@@ -84,7 +85,11 @@ class Dependencies:
 
 	# declares variable in wanted frame
 	#var[0] is the frame, var[1] is the variable name
-	def defVar(self, var):
+	def defVar(self, var, index):
+		if index in self.defVarIndex:
+			return
+		else:
+			self.defVarIndex.append(index)
 		if var[0] == "GF":
 			found, foundvar = self.getFromGF(var[1])
 			if found != -1: 	
