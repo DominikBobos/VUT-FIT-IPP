@@ -1,0 +1,60 @@
+\documentclass[11pt, a4paper]{article}
+
+\usepackage[czech]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{times}
+\usepackage[left=2cm, top=3cm, text={17cm, 24cm}]{geometry}
+\usepackage[unicode, colorlinks, hypertexnames=false, citecolor=red]{hyperref}
+
+
+\begin{document}
+    {\parindent 0pt \Large
+        Implementačná dokumentácia k~2.~úlohe do IPP 2019/2020\\
+        Meno a~priezvisko: Dominik Boboš \\
+        Login: \texttt{xbobos00}
+    }
+    
+    \section{Skript interpret.py}
+Skript \emph{interpret.py} uskutočňuje preklad vstupného XML súboru s~jazykom IPPcode20 a následne kód interpretuje s~využitím štandardného vstupu a výstupu. Skript je implementovaný v~troch moduloch \texttt{interpret.py}, \texttt{ippcode\_bank.py} a \texttt{ippcode\_dependencies.py}.
+    
+    	\subsection{Modul interpret.py}
+    Modul \texttt{interpret.py} je spúšťaný ako prvý. Na začiatku skriptu sa parsujú vstupné argumenty z~príkazového riadku. Trieda \textbf{\texttt{XMLparser}} obsahuje 2 metódy \emph{checkXML(source)} a \emph{checkBody(source)}. V~týchto metódach sa pomocou knižnice \emph{xml.etree.ElementTree} parsuje vstupný XML súbor s~IPPcode20 v~parametri \emph{source}. Overuje sa či je \uv{well-formed}, správnosť hlavičky a ostatné formálne záležitosti. Funkcia \emph{\-checkBody(source)} vracia list inštrukcií s~danými argumentami - \texttt{instrList}, spoločne vracia aj správne poradie jednotlivých inštrukcí podľa \emph{order} v~premennej \texttt{orderList}. Tieto parametre sú esenciálne pre modul \texttt{ippcode\_bank.py}.
+    
+    	\subsection{Modul ippcode\_bank.py}
+    	Tento modul je \uv{mozog} celého skriptu, nakoľko sa v~ňom overujú konkrétne inštrukcie a spúšťa potrebné funkcie na interpretáciu kódu. Obsahuje triedu \textbf{\texttt{Interpret}} s~početnými metódami. 
+Najdôležitejšie sú metódy \emph{checkInstr((self, order, xmlInstr)} a \emph{interpret(self, inputFile, inputBool)}. 
+
+V~\emph{checkInstr} sa uskutočňuje prvý prechod. Prebieha v~cykle while a skončí pri prechode všetkými inštrukciami. Kontroluje sa či každá inštrukcia dostala očakávaný počet argumentov, definujú sa návesti do \emph{self.labels}, overuje sa validita hodnôt symbolov či názvov premenných, alebo návestí, metóda vytvára list inštrukcií \emph{self.instructions} v~tvare {\bf[[instr1, [[arg1(type), arg1(value)][..., ...]]], [instr2 [[..., ...]]], [...[[...]]]]}, kde sú inštrukcie zoradené v~správnom poradí. 
+
+Samotná interpretácia kódu sa uskutočňuje až druhým prechodom v~metóde \emph{interpret(self, inputFile, input\-Bool)}. Prechod sa opäť uskutočňuje cyklom while, kde riadiaca premenná \emph{current} označuje momentálnu pozíciu v~kóde a cyklus sa ukončí pokiaľ \emph{current} dosiahne väčšiu hodnotu ako je počet inštrukcií. Parametre funkcie \emph{inputFile} a \emph{inputBool} slúžia inštrukcií READ k~prípadnému načítaniu vstupu zo súboru. Táto metóda slúži predovšetkým ako switch a prepája skript s~ďalším modulom \texttt{ippcode\_depen\-dencies.py}.
+
+     	\subsection{Modul ippcode\_dependencies.py}
+     	Tento modul spracováva jednotlivé inštrukcie jazyka IPPcode20. Uchováva závislosti ako je zásobník pre jednotlivé rámce, zoznamy pre jednotlivé rámce, zásobník pre inštrukcie PUSHS, POPS a pomocná premená pre inštrukciu READ, kde sa uchovávajú jednotlivé riadky zo súboru v~argumente \texttt{-{-}input}. 
+	
+	Dôležité metódy v~triede \textbf{\texttt{Dependencies}} sú \emph{foundVar(self, var, symbBool)} a \emph{setTypeValue(self, frame, index, typeVar, value)}. Prvá vyhľadá premennú s~názvom arg[1] v~rámci uloženom vo var[0], druhá vloží hodnotu \emph{value} a typ \emph{typeVar} do premennej na indexe \emph{index}. Tieto funkcie sa využívajú vo väčšine zvyšných funkcií tohoto modulu na vykonanie jednotlivých inštrukcií jazyka. 
+	
+	\subsection{Error handling}
+	Správa chybových hlásení je uskutočňovaná pomocou jednotlivých tried nakonci modulu \texttt{ippcode\_bank.py}, kde pre každý návratový kód chyby je vytvorená jedna trieda. Pri zachytávaní chyby je s~výnimkou zavolaná žiadaná trieda s~vhodnou chybovou hláškou a následne ukončuje skript s~danou návratovou hodnotou.
+	
+	\subsection{Implementované rozšírenia}
+	V~skripte sú implementované rožšírenia \textbf{\texttt{FLOAT,\,STACK,\,STATI}}. Tým, že sú implementované aj FLOAT aj STACK, tak sa oproti inštrukciám v~zadaní pre rozšírenie pridal aj DIVS, INT2FLOATS, FLOAT2INTS (podľa zadania do predmetu IFJ). 
+	
+	V~triede \texttt{Dependencies} sa implementovaním STACK pridal do metód ďalší argument \emph{stack} typu bool, ktorý je implicitne nastavený na \textbf{False}, v~prípade, že je \textbf{True}, tak sa výsledok riešenia neukladá do premennej \emph{var}, ale funkciou \emph{pushs(self, symb)} sa uloží na zásobník.
+	
+	Štatistické údaje \texttt{-{-}insts} sa zbierajú vo funkcií \emph{interpret(self, inputFile, inputBool)}. Údaj \texttt{-{-}vars} sa zbiera vo funkcií \emph{isInitialized(self, var)}, ktorá sa volá v~jednotlivých metódach modulu ippcode\_dependencies.py. Výsledné zozbierané štatistiky sa vypíšu do súboru predaného v~\texttt{-{-}stats} v~module interpret.py.
+	
+	\section{Skript test.php}
+	Skript \emph{test.php} slúži k~automatickému testovaniu skriptov \emph{parse.php} a \emph{interpret.py}. 
+	
+	V~hlavnom tele programu prebieha parsovanie vstupných argumentov, ktoré prípadne zmenia implicitné hodnoty globálnych premenných: \emph{\$directory, \$int\_file, \$parse\_file, \$jexamxml\_file, \$recursive\_flag, \$parse\_on\-ly\_flag, \$int\_only\_flag}, takže buď zmenia cesty, alebo nastavia prepínač.
+	
+	Samotné testovanie prebieha vo funkcií \texttt{TestFiles(\$source)}. Argument \emph{\$source} je \texttt{.src} súbor, vďaka ktorému zisťujeme existenciu ostatných testových súborov \texttt{.out}, \texttt{.rc}, \texttt{.in}. Následne spustíme najskôr skript \texttt{parse.php} pomocou príkazu \texttt{exec} a jeho výstup smeruje do dočasného súboru \texttt{temp\_output}. V~prípade, že návratová hodnota z~parse.php bola rovná 0, tak pokračujeme so spúšťaním skriptu \texttt{inter\-pret.py}, do ktorého ako vstup používame dočasný súbor \texttt{temp\_output} a súbor s~príponou \texttt{.in} a výstup smeruje do dočasného súboru \texttt{temp\_output2}. Následne sa porovnajú výstupné návratové hodnoty s~predpokladanou hodnotou. V~prípade, že sa rovnajú, tak sa programom \texttt{diff} s~prepínačom \texttt{-q} porovná súbor \texttt{temp\_output2} s~\texttt{*.out} súborom.
+	
+	V~prípade, že je zapnutý prepínač \texttt{-{-}parse-only}, tak na začiatku sa pomocou funkcie \texttt{is\-Xml\-Stru\-ctu\-re\-Valid(\$file)} zistí či sa náhodu nepúšťa k~testovaniu súbor s~XML reprezentáciou, v~takom prípade sa test preskočí, inak sa pokračuje ďalej a \texttt{temp\_output} sa pomocou programu \texttt{jexamxml.jar} porovná s~\texttt{*.out} súborom.
+	
+	Prepínač \texttt{-{-}recursive} sa implementuje pomocou \texttt{RecursiveIteratorIterator}, súbory, ktoré takto vyhľadá potom posiela do funkcie \emph{TestFiles(\$dir\_source)}
+	
+	Generovanie výsledného html súboru prebieha vo funkcií \texttt{HTMLgen(\$filename,\-\,\$exp\_rc\-,\-\,\$\-test\_\-rc,\,\$result,\-\,\$test\_count)}. Tá sa volá pri každom teste a postupne vkladá do html tabuľky informácie o~čísle testu, o~názve testu, úspešnosť, žiadaný návratový kód, kód z~výsledního testu. Po vykonaní testov celú túto html reprezentáciu vypíše na štandardný výstup.
+	
+\end{document}
