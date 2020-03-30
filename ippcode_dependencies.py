@@ -17,6 +17,8 @@ class Dependencies:
 		self.initializedVars = 0	#STATI extension, stores count of initialized vars
 		self.readValue = []			#variable for handling READ instruction
 		self.defVarIndex = []		#to prevent errors in loops
+		self.TFinit = []
+		self.LFinit = []
 
 
 	#pushes TF to LF
@@ -86,11 +88,11 @@ class Dependencies:
 	# declares variable in wanted frame
 	#var[0] is the frame, var[1] is the variable name
 	def defVar(self, var, index):
-		if index in self.defVarIndex:
-			return
-		else:
-			self.defVarIndex.append(index)
 		if var[0] == "GF":
+			if index in self.defVarIndex:
+				return
+			else:
+				self.defVarIndex.append(index)
 			found, foundvar = self.getFromGF(var[1])
 			if found != -1: 	
 				raise ib.SemanticsError("redefinition of var '{0}' in '{1}'".format(var[1], var[0]))  
@@ -517,7 +519,7 @@ class Dependencies:
 		if symb1Found[0] == '' or symb2Found[0] == '':
 			raise ib.MissingValue("unitialized variable")
 		if symb1Found[0] == 'string' and symb2Found[0] == 'string':
-			self.setTypeValue(var[0],varIndex, 'string', symb1[1] + symb2[1])
+			self.setTypeValue(var[0],varIndex, 'string', symb1Found[2] + symb2Found[2])
 		else:
 			raise ib.WrongArgTypes("CONCAT needs two string arguments.")
 
@@ -733,6 +735,14 @@ class Dependencies:
 	def isInitialized(self, var):
 		varIndex, varFound = self.foundVar(var, False)
 		if varFound[0] == '':	#this means it was just declared
+			if var[0] == "TF":
+				if var[1] not in self.TFinit:
+					self.TFinit.append(var[1])
+				else: return
+			elif var[0] =="LF":	 
+				if var[1] not in self.LFinit:
+					self.LFinit.append(var[1])
+				else: return
 			self.initializedVars += 1
 
 

@@ -31,7 +31,7 @@ INSTRUCTIONS =[ "MOVE",
 				"DPRINT", 
 				"BREAK",
 				"CLEARS",											#STATI extension
-				"ADDS", "SUBS", "MULS", "IDIVS", "DIVS" 			#STATI,FLOAT extension
+				"ADDS", "SUBS", "MULS", "IDIVS", "DIVS", 			#STATI,FLOAT extension
 				"LTS", "GTS", "EQS", 								#STATI extension
 				"ANDS", "ORS", "NOTS", 								#STATI extension
 				"INT2CHARS", "STRI2INTS", "INT2FLOATS", "FLOAT2INTS",#STATI,FLOAT extension
@@ -506,44 +506,44 @@ Currently in Temporary Frame:	{4}
 Currently in Local Frame:	{5}
 """.format(current +1,self.instrCount -1, self.run.dataStack, self.run.GF, 
 	self.run.TF, self.run.LF,justToBeExact,len(self.instructions)))
-			elif xmlInstr[ind][0].upper() == "CLEARS":
+			elif self.instructions[current][0].upper() == "CLEARS":
 				self.run.dataStack = []	#clears dataStack
-			elif xmlInstr[ind][0].upper() == "ADDS":
+			elif self.instructions[current][0].upper() == "ADDS":
 				self.run.calculate("ADDS",None,None,None,True)
-			elif xmlInstr[ind][0].upper() == "SUBS":
+			elif self.instructions[current][0].upper() == "SUBS":
 				self.run.calculate("SUBS",None,None,None,True)
-			elif xmlInstr[ind][0].upper() == "MULS":
+			elif self.instructions[current][0].upper() == "MULS":
 				self.run.calculate("MULS",None,None,None,True)
-			elif xmlInstr[ind][0].upper() == "DIVS":
+			elif self.instructions[current][0].upper() == "DIVS":
 				self.run.calculate("DIVS",None,None,None,True)
-			elif xmlInstr[ind][0].upper() == "IDIVS":
+			elif self.instructions[current][0].upper() == "IDIVS":
 				self.run.calculate("IDIVS",None,None,None,True)
-			elif xmlInstr[ind][0].upper() == "LTS":
+			elif self.instructions[current][0].upper() == "LTS":
 				self.run.conditions("LT",None,None,None,True)
-			elif xmlInstr[ind][0].upper() == "GTS":
+			elif self.instructions[current][0].upper() == "GTS":
 				self.run.conditions("GT",None,None,None,True)
-			elif xmlInstr[ind][0].upper() == "EQS":
+			elif self.instructions[current][0].upper() == "EQS":
 				self.run.conditions("EQ",None,None,None,True)
-			elif xmlInstr[ind][0].upper() == "ANDS":
-				self.run.logical("ANDS",None,None,None,True)
-			elif xmlInstr[ind][0].upper() == "ORS":
-				self.run.logical("ORS",None,None,None,True)
-			elif xmlInstr[ind][0].upper() == "NOTS":
-				self.run.logical("NOTS",None,None,None,True)
-			elif xmlInstr[ind][0].upper() == "INT2CHARS":
+			elif self.instructions[current][0].upper() == "ANDS":
+				self.run.logical("AND",None,None,None,True)
+			elif self.instructions[current][0].upper() == "ORS":
+				self.run.logical("OR",None,None,None,True)
+			elif self.instructions[current][0].upper() == "NOTS":
+				self.run.logical("NOT",None,None,None,True)
+			elif self.instructions[current][0].upper() == "INT2CHARS":
 				self.int2Char(None, None, True)
-			elif xmlInstr[ind][0].upper() == "STRI2INTS":
+			elif self.instructions[current][0].upper() == "STRI2INTS":
 				self.stri2Int(None, None, None, True)
-			elif xmlInstr[ind][0].upper() == "INT2FLOATS":
+			elif self.instructions[current][0].upper() == "INT2FLOATS":
 				self.int2Float(None, None, True)
-			elif xmlInstr[ind][0].upper() == "FLOAT2INTS":
+			elif self.instructions[current][0].upper() == "FLOAT2INTS":
 				self.float2Int(None, None, True)
-			elif xmlInstr[ind][0].upper() == "JUMPIFEQS":
+			elif self.instructions[current][0].upper() == "JUMPIFEQS":
 				retBool = self.run.condJumps("JUMPIFEQ", None, None, True)
 				if retBool == True:
 					current = self.goToLabel(self.instructions[current][1][0][1], -1)
 					self.instrCount += 1
-			elif xmlInstr[ind][0].upper() == "JUMPIFNEQS":
+			elif self.instructions[current][0].upper() == "JUMPIFNEQS":
 				retBool = self.run.condJumps("JUMPIFNEQ", None, None, True)
 				if retBool == True:
 					current = self.goToLabel(self.instructions[current][1][0][1], -1)
