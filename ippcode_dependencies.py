@@ -17,8 +17,8 @@ class Dependencies:
 		self.initializedVars = 0	#STATI extension, stores count of initialized vars
 		self.readValue = []			#variable for handling READ instruction
 		self.defVarIndex = []		#to prevent errors in loops
-		self.TFinit = []
-		self.LFinit = []
+		self.TFinit = []			#for STATI extension counts ever defined vars in TF
+		self.LFinit = []			#for STATI extension counts ever defined vars in LF
 
 
 	#pushes TF to LF
