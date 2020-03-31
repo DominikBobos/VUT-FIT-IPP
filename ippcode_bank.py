@@ -531,13 +531,13 @@ Currently in Local Frame:	{5}
 			elif self.instructions[current][0].upper() == "NOTS":
 				self.run.logical("NOT",None,None,None,True)
 			elif self.instructions[current][0].upper() == "INT2CHARS":
-				self.int2Char(None, None, True)
+				self.run.int2Char(None, None, True)
 			elif self.instructions[current][0].upper() == "STRI2INTS":
-				self.stri2Int(None, None, None, True)
+				self.run.stri2Int(None, None, None, True)
 			elif self.instructions[current][0].upper() == "INT2FLOATS":
-				self.int2Float(None, None, True)
+				self.run.int2Float(None, None, True)
 			elif self.instructions[current][0].upper() == "FLOAT2INTS":
-				self.float2Int(None, None, True)
+				self.run.float2Int(None, None, True)
 			elif self.instructions[current][0].upper() == "JUMPIFEQS":
 				retBool = self.run.condJumps("JUMPIFEQ", None, None, True)
 				if retBool == True:
