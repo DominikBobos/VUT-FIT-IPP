@@ -110,6 +110,15 @@ function TestFiles($source)
 			return false;
 		}
 
+		if ($int_only_flag == true)
+		{
+			$line = fgets(fopen($source, 'r'));
+			if ($line[0] != "<")
+			{
+				return false;
+			}
+		}
+
 		if(!file_exists($ref_rc))
 		{
 			$test_file = fopen($ref_rc, "w");
@@ -196,8 +205,13 @@ function TestFiles($source)
 					$success++;
 					HTMLgen($filename,$exp_rc,$rc_out,true,$test_count);
 				}
-				unlink("temp_output");
-				unlink("temp_output2");
+				if ($int_only_flag == true){
+					unlink("temp_output2");
+				}
+				else {
+					unlink("temp_output");
+					unlink("temp_output2");
+				}
 			}	
 		}
 	} 
