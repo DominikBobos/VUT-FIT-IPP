@@ -104,11 +104,6 @@ function TestFiles($source)
 			}
 			fclose($test_file);
 		}
-		
-		if(isXmlStructureValid($source) and $parse_only_flag == true)	//zistuje ci .src je xml subor
-		{
-			return false;
-		}
 
 		if ($int_only_flag == true)
 		{
@@ -118,6 +113,12 @@ function TestFiles($source)
 				return false;
 			}
 		}
+		elseif(isXmlStructureValid($source))	//zistuje ci .src je xml subor
+		{
+			return false;
+		}
+
+		
 
 		if(!file_exists($ref_rc))
 		{
@@ -165,6 +166,7 @@ function TestFiles($source)
 		else
 		{
 			exec("php7.4 ".$parse_file ." <$source >temp_output", $result,$rc_out);
+			exec("touch temp_output2");
 			if ($rc_out == 0)
 			{ 
 				exec("python3.8 ".$int_file ." --source=temp_output <$ref_in >temp_output2", $result,$rc_out);
@@ -205,14 +207,17 @@ function TestFiles($source)
 					$success++;
 					HTMLgen($filename,$exp_rc,$rc_out,true,$test_count);
 				}
-				if ($int_only_flag == true){
-					unlink("temp_output2");
-				}
-				else {
-					unlink("temp_output");
-					unlink("temp_output2");
-				}
 			}	
+		}
+		if($parse_only_flag == true){
+			unlink("temp_output");
+		}
+		if ($int_only_flag == true){
+			unlink("temp_output2");
+		}
+		else {
+			unlink("temp_output");
+			unlink("temp_output2");
 		}
 	} 
 	return True;	

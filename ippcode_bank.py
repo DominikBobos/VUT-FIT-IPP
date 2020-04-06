@@ -551,7 +551,7 @@ Currently in Local Frame:	{5}
 			current += 1
 		self.initVars = self.run.initializedVars
 		return True
-
+		
 '''
 Classes for managing error cases with the error message
 '''

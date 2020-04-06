@@ -90,7 +90,7 @@ class XMLparser:
 				if value.upper() != "IPPCODE20":
 					raise ippcode_bank.ParseError("language must be 'IPPcode20'")
 			elif attrib != "name" and attrib != "description":
-				raise ("program element can only contain language, name or description attributes")	
+				raise ippcode_bank.ParseError("program element can only contain language, name or description attributes")	
 		return root			
 	"""Source is the XMLtree with all the attributes
 	function checks syntax and lexical errors 
@@ -202,7 +202,7 @@ except elemTree.ParseError as wrongxml:
 	sys.exit(31)
 except TypeError as wrongxml:
 	sys.stderr.write("ERROR: wrong XML format-> %s!\n" % str(wrongxml))
-	sys.exit(31)
+	sys.exit(32)
 except FileNotFoundError:
 	sys.stderr.write("ERROR: Source file cannot be opened !\n")
 	sys.exit(11)
@@ -230,3 +230,4 @@ except ippcode_bank.WrongValue as wrongvalue:
 except ippcode_bank.StringError as wrongstring:
 	sys.stderr.write("ERROR: error with string-> %s!\n" % str(wrongstring))
 	sys.exit(58)
+

@@ -375,7 +375,8 @@ class Dependencies:
 			symb1 = self.pops(None,True)
 		symb1Index, symb1Found = self.foundVar(symb1, True)
 		symb2Found = ['bool', ["nothing"]]	#just because of 'NOT' uses only 2 args
-		self.isInitialized(var)
+		if stack == False:
+			self.isInitialized(var)
 		if op != 'NOT':
 			symb2Index, symb2Found = self.foundVar(symb2, True)	
 		if symb1Found[0] == '' or symb2Found[0] == '':
@@ -641,7 +642,8 @@ class Dependencies:
 		else:
 			symb = self.pops(None,True)
 		symbIndex, symbFound = self.foundVar(symb, True)
-		self.isInitialized(var)
+		if stack == False:
+			self.isInitialized(var)
 		if symbFound[0] == '':
 			raise ib.MissingValue("unitialized variable")
 		if symbFound[0] != 'int':
@@ -667,7 +669,8 @@ class Dependencies:
 			symb1 = self.pops(None,True)
 		symb1Index, symb1Found = self.foundVar(symb1, True)
 		symb2Index, symb2Found = self.foundVar(symb2, True)
-		self.isInitialized(var)
+		if stack == False:
+			self.isInitialized(var)
 		if symb1Found[0] == '' or symb2Found[0] == '':
 			raise ib.MissingValue("unitialized variable")
 		if symb1Found[0] != 'string':
@@ -699,7 +702,8 @@ class Dependencies:
 		else:
 			symb = self.pops(None,True)
 		symbIndex, symbFound = self.foundVar(symb, True)
-		self.isInitialized(var)
+		if stack == False:
+			self.isInitialized(var)
 		if symbFound[0] == '':
 			raise ib.MissingValue("unitialized variable")
 		if symbFound[0] != 'int':
@@ -723,7 +727,8 @@ class Dependencies:
 			symb = self.pops(None,True)
 		varIndex, varFound = self.foundVar(var, False)
 		symbIndex, symbFound = self.foundVar(symb, True)
-		self.isInitialized(var)
+		if stack == False:
+			self.isInitialized(var)
 		if symbFound[0] == '':
 			raise ib.MissingValue("unitialized variable")
 		if symbFound[0] != 'float':
