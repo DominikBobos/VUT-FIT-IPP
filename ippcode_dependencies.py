@@ -220,7 +220,7 @@ class Dependencies:
 			raise ib.WrongArgTypes(
 				"operand ({3})'{0}' of type '{1}' is not of the correct type for operation '{2}'".format(
 				symb1Found[2], symb1Found[0], op, varOrSymb))
-		if symb2Found[0] != 'int' and symb1Found[0] != 'float':
+		if symb2Found[0] != 'int' and symb2Found[0] != 'float':
 			if symb2Found[1] == []:
 				varOrSymb = 'symb'
 			else:
