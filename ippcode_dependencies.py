@@ -228,6 +228,12 @@ class Dependencies:
 			raise ib.WrongArgTypes(
 			"operand ({3})'{0}' of type '{1}' is not of the correct type for operation '{2}'".format(
 				symb2Found[2], symb2Found[0], op, varOrSymb))		
+		if (symb1Found[0] == 'int' and symb2Found[0] == 'int') or (symb1Found[0] == 'float' and symb2Found[0] == 'float'):
+			pass
+		else:
+			raise ib.WrongArgTypes(
+			"Could not execute {2}. Operands ({1})'{0}' and ({4})'{3}' should be both of the same type - No implicit conversions".format(
+				symb1Found[2], symb1Found[0], op, symb2Found[2], symb2Found[0]))	
 		if op == 'ADD' or op == 'ADDS':
 			if isinstance(symb1Found[2] + symb2Found[2], int):
 				if stack == False:
