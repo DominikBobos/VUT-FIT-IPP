@@ -653,7 +653,7 @@ class Dependencies:
 			if stack == False:
 				self.setTypeValue(var[0], varIndex, 'string', chr(symbFound[2]))
 			else:
-				self.pushs('string', chr(symbFound[2]))
+				self.pushs(['string', chr(symbFound[2])])
 		except (UnicodeEncodeError, ValueError, OverflowError):
 			raise ib.StringError(
 				"UnicodeEncodeError. Could not encode string in INT2CHAR, '%s' value is invalid" % symbFound[2])
@@ -687,7 +687,7 @@ class Dependencies:
 			if stack == False:
 				self.setTypeValue(var[0], varIndex, 'int', ord(symb1Found[2][symb2Found[2]]))
 			else:
-				self.pushs('int', ord(symb1Found[2][symb2Found[2]]))
+				self.pushs(['int', ord(symb1Found[2][symb2Found[2]])])
 		except (TypeError, IndexError, ValueError):
 			raise ib.StringError(
 				"Could not decode string in STRI2INT, '{1}' index is outside the given string '{0}'".format(
@@ -713,7 +713,7 @@ class Dependencies:
 			if stack == False:
 				self.setTypeValue(var[0], varIndex, 'float', float(symbFound[2]))
 			else:
-				self.pushs('float', float(symbFound[2]))
+				self.pushs(['float', float(symbFound[2])])
 		except (ValueError, TypeError):
 			raise ib.WrongValue("Could not convert Int to Float")
 
@@ -738,7 +738,7 @@ class Dependencies:
 			if stack == False:
 				self.setTypeValue(var[0], varIndex, 'int', int(symbFound[2]))
 			else:
-				self.pushs('int', int(symbFound[2]))
+				self.pushs(['int', int(symbFound[2])])
 		except (ValueError, TypeError):
 			raise ib.WrongValue("Could not convert Float to Int")
 
