@@ -1,20 +1,20 @@
 # VUT-FIT-IPP
 ##Hodnotenie 1. časti
 
-Vaše hodnocení části 1): 5,69 bodů
-Vaše hodnocení části 2): 0,92 bodů
-Vaše hodnocení části 3): 0,70 bodů
-  Komentář hodnocení části 3): WRONG, PARSEONLY (porovnání výstupu)
-Vaše hodnocení části 5): 1,00 bodů
-  Komentář hodnocení části 5) (sražka uváděny v minibodech, 1 bod = 100 minibodů): OK
+Vaše hodnocení části 1): 5,69 bodů <br/>
+Vaše hodnocení části 2): 0,92 bodů <br/>
+Vaše hodnocení části 3): 0,70 bodů <br/>
+  Komentář hodnocení části 3): WRONG, PARSEONLY (porovnání výstupu) <br/>
+Vaše hodnocení části 5): 1,00 bodů <br/>
+  Komentář hodnocení části 5) (sražka uváděny v minibodech, 1 bod = 100 minibodů): OK <br/>
 
-Procentuální hodnocení jednotlivých kategorií skriptu parse.php:
-Lexikální analýza: 96%
-Syntaktická analýza: 86%
-Zpracování instrukcí: 96%
-Zpracování programů: 100%
-Rozšíření STATP 92%
-Celkem bez rozšíření: 94%
+Procentuální hodnocení jednotlivých kategorií skriptu parse.php: <br/>
+Lexikální analýza: 96% <br/>
+Syntaktická analýza: 86% <br/>
+Zpracování instrukcí: 96% <br/>
+Zpracování programů: 100% <br/>
+Rozšíření STATP 92% <br/>
+Celkem bez rozšíření: 94% <br/>
 
 # Zadání projektu z předmětu IPP 2019/
 
