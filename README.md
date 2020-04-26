@@ -1,5 +1,5 @@
 # VUT-FIT-IPP
-##Hodnotenie 1. časti
+## Hodnotenie 1. časti
 
 Vaše hodnocení části 1): 5,69 bodů <br/>
 Vaše hodnocení části 2): 0,92 bodů <br/>
@@ -15,6 +15,28 @@ Zpracování instrukcí: 96% <br/>
 Zpracování programů: 100% <br/>
 Rozšíření STATP 92% <br/>
 Celkem bez rozšíření: 94% <br/>
+
+## Hodnotenie 2. časti
+
+Vaše hodnocení části 1): 7,91 bodů  <br/>
+Vaše hodnocení části 2): 2,67 bodů  <br/>
+Vaše hodnocení části 3): 2,48 bodů  <br/>
+  Komentář hodnocení části 3): WRONG  <br/>
+  Body za rozšíření k části 3): 0,00 bodů <br/>
+Vaše hodnocení části 5): 1,80 bodů  <br/>
+  Komentář hodnocení části 5) (sražka uváděny v minibodech, 1 bod = 100 minibodů): JAK (rámce) -10, LANG -10, SAZBA, ve skriptech chybí jméno autora  <br/>
+<br/>
+Procentuální hodnocení jednotlivých kategorií skriptu interpret.py: <br/>
+Lexikální analýza: 96%  <br/>
+Syntaktická analýza: 100% <br/>
+Sémantická analýza (detekce chyb): 100% <br/>
+Běhové chyby (detekce): 100%  <br/>
+Interpretace instrukcí: 96% <br/>
+Interpretace programů: 100% <br/>
+Rozšíření FLOAT 89% <br/>
+Rozšíření STACK 100%  <br/>
+Rozšíření STATI 78% <br/>
+Celkem bez rozšíření: 98% <br/>
 
 # Zadání projektu z předmětu IPP 2019/
 
